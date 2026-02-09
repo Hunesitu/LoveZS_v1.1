@@ -1,0 +1,70 @@
+version: '3.8'
+
+# 本地开发环境 Docker Compose 配置
+# 包括 PostgreSQL 和 Redis 服务
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: lovezs-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lovezs_dev
+      POSTGRES_USER: lovezs
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - lovezs-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lovezs -d lovezs_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis（用于缓存和会话）
+  redis:
+    image: redis:7-alpine
+    container_name: lovezs-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - lovezs-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin（可选的数据库管理工具）
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: lovezs-pgadmin-dev
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@lovezs.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    networks:
+      - lovezs-dev
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  lovezs-dev:
+    driver: bridge

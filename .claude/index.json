@@ -1,0 +1,135 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-02-07T11:57:45+08:00",
+  "project": {
+    "name": "LoveZs_New",
+    "description": "情侣专属生活记录应用 - 前后端分离架构，从 Express+React+MongoDB 迁移到 Django+Vue+PostgreSQL",
+    "root": "F:\\LoveZs_New"
+  },
+  "modules": [
+    {
+      "name": "backend_django",
+      "path": "backend_django",
+      "language": "Python",
+      "framework": "Django 5.2 + Django REST Framework 3.16",
+      "entry": "backend_django/manage.py",
+      "config_files": [
+        "backend_django/config/settings/base.py",
+        "backend_django/config/settings/development.py",
+        "backend_django/config/settings/production.py",
+        "backend_django/requirements.txt"
+      ],
+      "api_routes": "backend_django/lovezs/urls.py",
+      "models": "backend_django/lovezs/models.py",
+      "views": "backend_django/lovezs/views.py",
+      "serializers": "backend_django/lovezs/serializers.py",
+      "admin": "backend_django/lovezs/admin.py",
+      "tests": [
+        "backend_django/test_api.py",
+        "backend_django/lovezs/tests.py"
+      ],
+      "migrations": "backend_django/lovezs/migrations/",
+      "has_tests": true,
+      "test_status": "basic_script_only",
+      "coverage": {
+        "scanned_files": 14,
+        "total_files": 14,
+        "percentage": 100,
+        "gaps": [
+          "lovezs/tests.py 为空，缺少正式单元测试",
+          "缺少 .env 示例文件"
+        ]
+      }
+    },
+    {
+      "name": "frontend_vue",
+      "path": "frontend_vue",
+      "language": "TypeScript",
+      "framework": "Vue 3.5 + Vite 7 + Pinia 3 + TailwindCSS 4",
+      "entry": "frontend_vue/src/main.ts",
+      "config_files": [
+        "frontend_vue/package.json",
+        "frontend_vue/vite.config.ts",
+        "frontend_vue/tsconfig.json",
+        "frontend_vue/tsconfig.app.json",
+        "frontend_vue/tsconfig.node.json",
+        "frontend_vue/tailwind.config.js",
+        "frontend_vue/postcss.config.js"
+      ],
+      "router": "frontend_vue/src/router/index.ts",
+      "api_layer": [
+        "frontend_vue/src/api/client.ts",
+        "frontend_vue/src/api/diary.ts",
+        "frontend_vue/src/api/photo.ts",
+        "frontend_vue/src/api/countdown.ts"
+      ],
+      "composables": [
+        "frontend_vue/src/composables/useDiaries.ts",
+        "frontend_vue/src/composables/usePhotos.ts",
+        "frontend_vue/src/composables/useCountdowns.ts"
+      ],
+      "stores": [
+        "frontend_vue/src/stores/ui.ts"
+      ],
+      "types": "frontend_vue/src/types/index.ts",
+      "views": [
+        "frontend_vue/src/views/Dashboard.vue",
+        "frontend_vue/src/views/Diaries.vue",
+        "frontend_vue/src/views/DiaryEditor.vue",
+        "frontend_vue/src/views/Photos.vue",
+        "frontend_vue/src/views/Countdowns.vue",
+        "frontend_vue/src/views/Settings.vue"
+      ],
+      "components": [
+        "frontend_vue/src/components/Layout.vue",
+        "frontend_vue/src/components/HelloWorld.vue"
+      ],
+      "has_tests": false,
+      "test_status": "none",
+      "coverage": {
+        "scanned_files": 22,
+        "total_files": 22,
+        "percentage": 100,
+        "gaps": [
+          "无任何前端测试文件",
+          "缺少 .env.example 文件",
+          "HelloWorld.vue 为脚手架残留"
+        ]
+      }
+    }
+  ],
+  "scan_summary": {
+    "total_source_files": 36,
+    "scanned_files": 36,
+    "coverage_percentage": 100,
+    "ignored_directories": [
+      "node_modules (npm 依赖)",
+      ".idea (IDE 配置)",
+      ".git (版本控制)"
+    ],
+    "ignored_binary_files": [
+      "backend_django/db.sqlite3",
+      "frontend_vue/package-lock.json",
+      "frontend_vue/src/assets/vue.svg"
+    ],
+    "truncated": false,
+    "scan_depth": "deep",
+    "scan_phases_completed": ["A", "B", "C"]
+  },
+  "gaps": [
+    "后端缺少正式单元测试（lovezs/tests.py 为空）",
+    "前端完全没有测试文件",
+    "缺少 Docker 配置文件",
+    "缺少 CI/CD 配置",
+    "缺少 .env.example 环境变量示例",
+    "缺少 API 文档（如 OpenAPI/Swagger）"
+  ],
+  "next_steps": [
+    "补充后端单元测试和集成测试",
+    "添加前端组件测试（Vitest + Vue Test Utils）",
+    "创建 .env.example 文件",
+    "添加 Docker / docker-compose 配置",
+    "添加 CI/CD 流水线配置",
+    "生成 OpenAPI 文档"
+  ]
+}
