@@ -33,7 +33,8 @@ interface DiariesResult {
  */
 export const getDiaries = async (params?: DiaryQueryParams): Promise<{ diaries: Diary[] }> => {
   const response = await api.get<DjangoPaginatedResponse<DiariesResult>>('/diaries/', { params })
-  return response.data.results?.diaries ?? { diaries: [] }
+  const result = response.data.results
+  return result?.diaries ?? { diaries: [] }
 }
 
 /**
