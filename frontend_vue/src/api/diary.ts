@@ -92,14 +92,6 @@ export const getCategories = async (): Promise<{ categories: string[] }> => {
   return response.data
 }
 
-/**
- * 获取所有标签
- */
-export const getTags = async (): Promise<{ tags: string[] }> => {
-  const response = await api.get<{ tags: string[] }>('/diaries/meta/tags/')
-  return response.data
-}
-
 // 默认导出
 const diaryService = {
   getDiaries,
@@ -110,7 +102,6 @@ const diaryService = {
   attachPhotos,
   removePhoto,
   getCategories,
-  getTags,
 }
 
 export default diaryService

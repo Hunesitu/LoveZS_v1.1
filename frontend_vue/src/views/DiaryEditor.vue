@@ -8,7 +8,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
-import { Save, X, Plus } from 'lucide-vue-next'
+import { Save, X } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import type { Mood, CreateDiaryRequest, Photo } from '@/types'
 import photoService from '@/api/photo'
@@ -30,7 +30,6 @@ const formData = ref<CreateDiaryRequest>({
   mood: 'happy',
   category: '生活',
   date: dayjs().format('YYYY-MM-DD'),
-  tags: [],
   photo_ids: []
 })
 
@@ -54,23 +53,6 @@ const moodOptions: { value: Mood; label: string; emoji: string }[] = [
 // 分类选项
 const categoryOptions = ['生活', '工作', '学习', '旅行', '美食', '运动', '娱乐', '其他']
 
-// 标签输入
-const tagInput = ref('')
-
-// 添加标签
-const addTag = () => {
-  const tag = tagInput.value.trim()
-  if (tag && !formData.value.tags?.includes(tag)) {
-    formData.value.tags = [...(formData.value.tags || []), tag]
-    tagInput.value = ''
-  }
-}
-
-// 移除标签
-const removeTag = (tag: string) => {
-  formData.value.tags = formData.value.tags?.filter(t => t !== tag)
-}
-
 const loadDiaryForEdit = async () => {
   if (!isEditMode.value) {
     return
@@ -93,7 +75,6 @@ const loadDiaryForEdit = async () => {
       mood: diary.mood,
       category: diary.category,
       date: diary.date,
-      tags: diary.tags || [],
       photo_ids: (diary.attached_photos || []).map(photo => photo.id),
     }
     uploadedPhotos.value = [...(diary.attached_photos || [])]
@@ -106,13 +87,9 @@ const loadDiaryForEdit = async () => {
   }
 }
 
-const handleSelectPhotos = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const files = target.files ? Array.from(target.files) : []
-
-  if (files.length === 0) {
-    return
-  }
+// 通用图片上传函数
+const uploadImageFiles = async (files: File[]) => {
+  if (files.length === 0) return
 
   isUploading.value = true
   try {
@@ -131,12 +108,45 @@ const handleSelectPhotos = async (event: Event) => {
     formData.value.photo_ids = Array.from(ids)
 
     uiStore.showToast(`已上传 ${newPhotos.length} 张图片`, 'success')
-    target.value = ''
   } catch (error) {
-    console.error('Upload diary photos error:', error)
+    console.error('Upload image error:', error)
     uiStore.showToast('图片上传失败，请稍后重试', 'error')
   } finally {
     isUploading.value = false
+  }
+}
+
+// 处理文件选择上传
+const handleSelectPhotos = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files ? Array.from(target.files) : []
+
+  await uploadImageFiles(files)
+  target.value = ''
+}
+
+// 处理剪贴板粘贴图片
+const handlePaste = async (event: ClipboardEvent) => {
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  const imageFiles: File[] = []
+
+  // 遍历剪贴板项，提取图片
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) {
+        imageFiles.push(file)
+      }
+    }
+  }
+
+  // 如果有图片，阻止默认行为并上传
+  if (imageFiles.length > 0) {
+    event.preventDefault()
+    await uploadImageFiles(imageFiles)
   }
 }
 
@@ -251,35 +261,6 @@ onMounted(() => {
         </select>
       </div>
 
-      <!-- 标签 -->
-      <div class="form-group">
-        <label class="form-label">标签</label>
-        <div class="tags-input-group">
-          <div class="tags-list">
-            <span
-              v-for="tag in formData.tags"
-              :key="tag"
-              class="tag-item"
-            >
-              #{{ tag }}
-              <button @click="removeTag(tag)" class="tag-remove">脳</button>
-            </span>
-          </div>
-          <div class="tag-input-row">
-            <input
-              v-model="tagInput"
-              type="text"
-              class="input-field"
-              placeholder="添加标签..."
-              @keyup.enter="addTag"
-            />
-            <button @click="addTag" class="btn-add-tag">
-              <Plus :size="16" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- 内容 -->
       <div class="form-group">
         <label class="form-label">内容</label>
@@ -288,8 +269,9 @@ onMounted(() => {
           class="content-textarea"
           placeholder="记录今天发生了什么..."
           rows="12"
+          @paste="handlePaste"
         ></textarea>
-        <p class="help-text">支持 Markdown 语法</p>
+        <p class="help-text">支持 Markdown 语法，可直接粘贴图片上传</p>
       </div>
 
       <div class="form-group">
@@ -452,70 +434,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-}
-
-.tags-input-group {
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: 0.75rem;
-  background: #fff;
-}
-
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.tag-item {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.5rem;
-  background: #ffeaf3;
-  color: #a55674;
-  border-radius: 9999px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.tag-remove {
-  background: none;
-  border: none;
-  color: #a55674;
-  cursor: pointer;
-  padding: 0;
-  margin-left: 0.25rem;
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.tag-input-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.tag-input-row .input-field {
-  flex: 1;
-}
-
-.btn-add-tag {
-  padding: 0.625rem;
-  background: linear-gradient(135deg, var(--pink-500) 0%, var(--rose-500) 100%);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--dur-fast), box-shadow var(--dur-base), filter var(--dur-base);
-}
-
-.btn-add-tag:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 18px rgba(217, 117, 154, 0.28);
-  filter: brightness(1.02);
 }
 
 .content-textarea {

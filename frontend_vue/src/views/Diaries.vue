@@ -19,7 +19,6 @@ const searchTerm = ref('')
 const selectedCategory = ref('')
 const selectedMood = ref('')
 const categories = ref<string[]>([])
-const tags = ref<string[]>([])
 
 const moodOptions = [
   { value: 'happy', label: '开心 😊' },
@@ -39,8 +38,7 @@ const filteredDiaries = computed(() => {
     const term = searchTerm.value.toLowerCase()
     filtered = filtered.filter((diary) =>
       diary.title.toLowerCase().includes(term) ||
-      diary.content.toLowerCase().includes(term) ||
-      diary.tags?.some((tag) => tag.toLowerCase().includes(term))
+      diary.content.toLowerCase().includes(term)
     )
   }
 
@@ -58,17 +56,14 @@ const filteredDiaries = computed(() => {
 const loadCategoriesAndTags = async () => {
   try {
     const categorySet = new Set<string>()
-    const tagSet = new Set<string>()
 
     diaries.value.forEach((diary) => {
       if (diary.category) categorySet.add(diary.category)
-      diary.tags?.forEach((tag) => tagSet.add(tag))
     })
 
     categories.value = Array.from(categorySet)
-    tags.value = Array.from(tagSet)
   } catch (error) {
-    console.error('Failed to load categories and tags:', error)
+    console.error('Failed to load categories:', error)
   }
 }
 
@@ -236,17 +231,10 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 鏍囩鍜屽垎绫?-->
+        <!-- 分类 -->
         <div class="card-footer">
           <div class="tags-group">
             <span class="category-badge">{{ diary.category }}</span>
-            <span
-              v-for="tag in diary.tags?.slice(0, 2)"
-              :key="tag"
-              class="tag-badge"
-            >
-              #{{ tag }}
-            </span>
           </div>
           <span
             v-if="diary.attached_photos && diary.attached_photos.length > 0"
@@ -576,17 +564,6 @@ onMounted(() => {
   font-weight: 600;
   background: #ffeaf3;
   color: #a55674;
-}
-
-.tag-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  background: #f6f0f4;
-  color: #5f4e59;
 }
 
 .photo-count {
