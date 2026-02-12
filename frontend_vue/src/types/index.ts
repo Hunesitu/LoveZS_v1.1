@@ -115,7 +115,6 @@ export interface Diary {
   category: string
   date: string
   formatted_date?: string
-  tags: string[]
   attached_photos?: Photo[]
   word_count?: number
   created_at: string
@@ -234,7 +233,6 @@ export interface CreateDiaryRequest {
   mood: Mood
   category: string
   date?: string
-  tags?: string[]
   photo_ids?: number[]
 }
 
@@ -281,7 +279,6 @@ export interface DiaryFormData {
   mood: Mood
   category: string
   date: string
-  tags: string[]
 }
 
 /**

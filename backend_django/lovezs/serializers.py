@@ -138,56 +138,17 @@ class DiarySerializer(serializers.ModelSerializer):
 
     # 关联数据
     attached_photos = PhotoSerializer(many=True, read_only=True)
-    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Diary
         fields = [
             'id', 'title', 'content', 'mood', 'category',
             'date', 'formatted_date',
-            'tags', 'attached_photos',
+            'attached_photos',
             'word_count',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def get_tags(self, obj):
-        """获取标签列表"""
-        return list(DiaryTag.objects.filter(diary=obj).values_list('tag', flat=True))
-
-    def create(self, validated_data):
-        """
-        创建日记时处理标签
-        """
-        tags = validated_data.pop('tags', [])
-        diary = Diary.objects.create(**validated_data)
-
-        # 创建标签关联
-        for tag in tags:
-            DiaryTag.objects.create(diary=diary, tag=tag)
-
-        return diary
-
-    def update(self, instance, validated_data):
-        """
-        更新日记时处理标签
-        """
-        tags = validated_data.pop('tags', None)
-
-        # 更新基本信息
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        # 更新标签
-        if tags is not None:
-            # 删除旧标签
-            DiaryTag.objects.filter(diary=instance).delete()
-            # 添加新标签
-            for tag in tags:
-                DiaryTag.objects.create(diary=instance, tag=tag)
-
-        return instance
 
 
 class DiaryListSerializer(serializers.ModelSerializer):
@@ -197,7 +158,6 @@ class DiaryListSerializer(serializers.ModelSerializer):
     formatted_date = serializers.ReadOnlyField()
     word_count = serializers.ReadOnlyField()
     photo_count = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
     attached_photos = PhotoSerializer(many=True, read_only=True)
 
     class Meta:
@@ -205,7 +165,7 @@ class DiaryListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'content', 'mood', 'category',
             'date', 'formatted_date',
-            'tags', 'attached_photos',
+            'attached_photos',
             'word_count', 'photo_count',
             'created_at'
         ]
@@ -214,20 +174,11 @@ class DiaryListSerializer(serializers.ModelSerializer):
         """获取关联照片数量"""
         return obj.attached_photos.count()
 
-    def get_tags(self, obj):
-        """获取标签列表"""
-        return list(DiaryTag.objects.filter(diary=obj).values_list('tag', flat=True))
-
 
 class DiaryCreateSerializer(serializers.ModelSerializer):
     """
     日记创建序列化器
     """
-    tags = serializers.ListField(
-        child=serializers.CharField(max_length=20),
-        required=False,
-        default=[]
-    )
     photo_ids = serializers.ListField(
         child=serializers.IntegerField(),
         required=False,
@@ -239,22 +190,17 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
         model = Diary
         fields = [
             'title', 'content', 'mood', 'category',
-            'date', 'tags', 'photo_ids'
+            'date', 'photo_ids'
         ]
 
     def create(self, validated_data):
         """
-        创建日记，处理标签和照片关联
+        创建日记，处理照片关联
         """
-        tags = validated_data.pop('tags', [])
         photo_ids = validated_data.pop('photo_ids', [])
 
         # 创建日记
         diary = Diary.objects.create(**validated_data)
-
-        # 创建标签关联
-        for tag in tags:
-            DiaryTag.objects.get_or_create(diary=diary, tag=tag)
 
         # 创建照片关联
         for photo_id in photo_ids:
@@ -268,19 +214,13 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """
-        更新日记，处理标签和照片关联
+        更新日记，处理照片关联
         """
-        tags = validated_data.pop('tags', None)
         photo_ids = validated_data.pop('photo_ids', None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-
-        if tags is not None:
-            DiaryTag.objects.filter(diary=instance).delete()
-            for tag in tags:
-                DiaryTag.objects.get_or_create(diary=instance, tag=tag)
 
         if photo_ids is not None:
             DiaryPhoto.objects.filter(diary=instance).delete()

@@ -108,10 +108,6 @@ onMounted(() => {
         </div>
       </header>
 
-      <section v-if="diary.tags?.length" class="tags-line">
-        <span v-for="tag in diary.tags" :key="tag" class="tag-item">#{{ tag }}</span>
-      </section>
-
       <section class="content-section">
         <pre class="content-text">{{ diary.content }}</pre>
       </section>
@@ -239,24 +235,6 @@ onMounted(() => {
 
 .mood-emoji {
   font-size: 1.3rem;
-}
-
-.tags-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 1rem;
-}
-
-.tag-item {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.55rem;
-  background: #ffeaf3;
-  color: #a55674;
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  font-weight: 500;
 }
 
 .content-section {
