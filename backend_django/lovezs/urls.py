@@ -9,6 +9,7 @@ LoveZs App URL 配置
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from . import auth_views
 
 # 创建 DRF Router
 router = DefaultRouter()
@@ -24,6 +25,13 @@ app_name = 'lovezs'
 urlpatterns = [
     # API 路由
     path('api/', include(router.urls)),
+
+    # 认证 API
+    path('api/auth/register/', auth_views.register, name='register'),
+    path('api/auth/login/', auth_views.LoginView.as_view(), name='login'),
+    path('api/auth/logout/', auth_views.logout, name='logout'),
+    path('api/auth/profile/', auth_views.profile, name='profile'),
+    path('api/auth/change-password/', auth_views.change_password, name='change-password'),
 
     # 健康检查
     path('api/health/', views.health_check, name='health-check'),

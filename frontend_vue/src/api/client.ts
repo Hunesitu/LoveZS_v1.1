@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios'
+import { useUserStore } from '@/stores/user'
 
 // 获取 API 基础 URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
@@ -17,14 +18,58 @@ export const api = axios.create({
   timeout: 30000, // 30秒超时
 })
 
+// Token 刷新锁，防止并发刷新
+let isRefreshing = false
+let refreshSubscribers: Array<(token: string) => void> = []
+
+/**
+ * 订阅 token 刷新完成
+ */
+function subscribeTokenRefresh(callback: (token: string) => void) {
+  refreshSubscribers.push(callback)
+}
+
+/**
+ * 通知所有订阅者 token 刷新完成
+ */
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach(callback => callback(token))
+  refreshSubscribers = []
+}
+
+/**
+ * 尝试刷新 token
+ */
+async function attemptRefreshToken() {
+  const userStore = useUserStore()
+  const refreshTokenValue = userStore.refreshToken
+
+  if (!refreshTokenValue) {
+    throw new Error('No refresh token available')
+  }
+
+  const response = await axios.post(`${API_BASE_URL}/auth/login/`, {
+    refresh: refreshTokenValue
+  })
+
+  // 更新 store 中的 token
+  if (response.data?.data?.token) {
+    userStore.updateToken(response.data.data.token)
+    return response.data.data.token.access
+  }
+
+  throw new Error('Token refresh failed')
+}
+
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    // 可以在这里添加 token 等认证信息
-    // const token = localStorage.getItem('token')
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`
-    // }
+    // 添加 token 到请求头
+    const userStore = useUserStore()
+    const token = userStore.token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   (error) => {
@@ -41,7 +86,52 @@ api.interceptors.response.use(
     }
     return response
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config
+
+    // 处理 401 未授权错误
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const userStore = useUserStore()
+
+      // 如果正在刷新 token，将请求加入队列
+      if (isRefreshing) {
+        return new Promise(resolve => {
+          subscribeTokenRefresh((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`
+            resolve(api(originalRequest))
+          })
+        })
+      }
+
+      // 尝试刷新 token
+      if (userStore.refreshToken) {
+        isRefreshing = true
+        originalRequest._retry = true
+
+        try {
+          const newToken = await attemptRefreshToken()
+          isRefreshing = false
+          onRefreshed(newToken)
+
+          // 重试原请求
+          originalRequest.headers.Authorization = `Bearer ${newToken}`
+          return api(originalRequest)
+        } catch (refreshError) {
+          isRefreshing = false
+          refreshSubscribers = []
+
+          // 刷新失败，清除认证信息并跳转到登录页
+          userStore.logout()
+          window.location.href = '/login'
+          return Promise.reject(refreshError)
+        }
+      } else {
+        // 没有 refresh token，直接清除认证信息
+        userStore.logout()
+        window.location.href = '/login'
+      }
+    }
+
     // 统一错误处理
     console.error('API Error:', error)
 

@@ -4,6 +4,55 @@
  */
 
 // ========================================
+// 用户类型
+// ========================================
+
+/**
+ * 用户模型
+ */
+export interface User {
+  id: number
+  username: string
+  email: string
+  first_name?: string
+  last_name?: string
+  is_staff?: boolean
+  date_joined: string
+}
+
+/**
+ * 用户注册请求
+ */
+export interface RegisterRequest {
+  username: string
+  password: string
+}
+
+/**
+ * 用户登录请求
+ */
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+/**
+ * Token 响应
+ */
+export interface TokenResponse {
+  access: string
+  refresh: string
+}
+
+/**
+ * 认证响应
+ */
+export interface AuthResponse {
+  user: User
+  token: TokenResponse
+}
+
+// ========================================
 // 模型类型
 // ========================================
 
@@ -65,8 +114,19 @@ export interface Album {
   cover_photo: string
   is_default: boolean
   photo_count?: number
+  created_by?: number | null
+  created_by_details?: UserBasic
   created_at: string
   updated_at: string
+}
+
+/**
+ * 用户基本信息
+ */
+export interface UserBasic {
+  id: number
+  username: string
+  email: string
 }
 
 /**
@@ -100,8 +160,21 @@ export interface Photo {
   }
   compressed_url?: string
   thumbnail_url?: string
+  created_by?: number | null
+  created_by_details?: UserBasic
   created_at: string
   updated_at: string
+}
+
+/**
+ * 日记评论模型
+ */
+export interface DiaryComment {
+  id: number
+  content: string
+  created_by: number
+  created_by_details?: UserBasic
+  created_at: string
 }
 
 /**
@@ -117,6 +190,9 @@ export interface Diary {
   formatted_date?: string
   attached_photos?: Photo[]
   word_count?: number
+  comments?: DiaryComment[]
+  created_by?: number | null
+  created_by_details?: UserBasic
   created_at: string
   updated_at: string
 }
@@ -139,6 +215,8 @@ export interface Countdown {
   days: number
   absolute_days?: number
   status: string
+  created_by?: number | null
+  created_by_details?: UserBasic
   created_at: string
   updated_at: string
 }

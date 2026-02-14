@@ -7,12 +7,14 @@ Diaries 椤甸潰
 import { ref, computed, onMounted } from 'vue'
 import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
 import { Plus, Search, Trash2, Edit } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import type { Diary } from '@/types'
 import { resolveMediaUrl } from '@/utils/media'
 
 const uiStore = useUiStore()
+const userStore = useUserStore()
 const { diaries, isLoading, loadDiaries, deleteDiary } = useDiaries()
 
 const searchTerm = ref('')
@@ -185,10 +187,13 @@ onMounted(() => {
             <span class="mood-emoji">{{ getMoodEmoji(diary.mood) }}</span>
             <div class="diary-meta">
               <h3 class="diary-title">{{ diary.title }}</h3>
-              <p class="diary-date">{{ dayjs(diary.date).format('YYYY-MM-DD') }}</p>
+              <p class="diary-date">
+                {{ dayjs(diary.created_at).format('YYYY-MM-DD HH:mm:ss') }}
+                <span v-if="diary.created_by_details" class="diary-author">· {{ diary.created_by_details.username }}</span>
+              </p>
             </div>
           </div>
-          <div class="header-actions">
+          <div class="header-actions" v-if="diary.created_by === userStore.user?.id">
             <RouterLink
               :to="`/diaries/${diary.id}/edit`"
               class="action-btn edit-btn"
@@ -459,6 +464,11 @@ onMounted(() => {
   margin: 0.15rem 0 0;
   font-size: 0.8125rem;
   color: var(--text-secondary);
+}
+
+.diary-author {
+  color: var(--pink-500);
+  font-weight: 500;
 }
 
 .header-actions {

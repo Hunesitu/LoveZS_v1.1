@@ -85,6 +85,14 @@ class Album(models.Model):
         verbose_name='是否默认',
         help_text='默认相册，只能有一个'
     )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='创建者',
+        related_name='albums'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
@@ -165,6 +173,14 @@ class Photo(models.Model):
         verbose_name='压缩图URL'
     )
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='上传者',
+        related_name='uploaded_photos'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
@@ -244,6 +260,12 @@ class Diary(models.Model):
         db_index=True
     )
 
+    def save(self, *args, **kwargs):
+        # 确保 date 字段是 date 类型而不是 datetime
+        if hasattr(self.date, 'date'):
+            self.date = self.date.date()
+        super().save(*args, **kwargs)
+
     # 关联照片 (多对多关系)
     attached_photos = models.ManyToManyField(
         Photo,
@@ -253,6 +275,14 @@ class Diary(models.Model):
         verbose_name='关联照片'
     )
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='作者',
+        related_name='diaries'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
@@ -264,7 +294,7 @@ class Diary(models.Model):
             models.Index(fields=['category']),
             models.Index(fields=['mood']),
         ]
-        ordering = ['-date']
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.title
@@ -409,6 +439,14 @@ class Countdown(models.Model):
         help_text='每年重复时的日期 (1-31)'
     )
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='创建者',
+        related_name='countdowns'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
@@ -511,3 +549,38 @@ class Countdown(models.Model):
             if days <= 30:
                 return 'soon'
             return 'upcoming'
+
+
+# ========================================
+# DiaryComment 模型 (日记评论)
+# ========================================
+
+class DiaryComment(models.Model):
+    """
+    日记评论模型
+    """
+    diary = models.ForeignKey(
+        Diary,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='所属日记'
+    )
+    content = models.TextField(
+        max_length=1000,
+        verbose_name='评论内容'
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='diary_comments',
+        verbose_name='评论者'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='评论时间')
+
+    class Meta:
+        verbose_name = '日记评论'
+        verbose_name_plural = '日记评论'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.created_by} - {self.diary.title}"

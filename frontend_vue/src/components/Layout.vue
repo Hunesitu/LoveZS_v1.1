@@ -1,7 +1,7 @@
-﻿<!--
-Layout 缁勪欢
-瀵瑰簲鍘? frontend/src/components/Layout.tsx
-鍖呭惈渚ц竟鏍忓鑸拰涓诲唴瀹瑰尯鍩?
+<!--
+Layout 布局组件
+对应原 frontend/src/components/Layout.tsx
+提供侧边栏导航和主内容区域
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
@@ -14,15 +14,20 @@ import {
   Menu,
   X,
   Heart,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  User
 } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
+import { logout } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const userStore = useUserStore()
 
-// 渚ц竟鏍忚彍鍗曢」
+// 侧边栏菜单项
 const menuItems = [
   { name: 'dashboard', label: '仪表盘', icon: Home, path: '/dashboard' },
   { name: 'diaries', label: '日记', icon: BookOpen, path: '/diaries' },
@@ -30,13 +35,13 @@ const menuItems = [
   { name: 'settings', label: '设置', icon: Settings, path: '/settings' },
 ]
 
-// 褰撳墠璺敱鍚嶇О
+// 当前激活路由名称
 const currentRouteName = computed(() => route.name as string)
 
-// 鍒ゆ柇鏄惁鏄Щ鍔ㄧ
+// 检测是否是移动端
 const isMobile = ref(window.innerWidth < 768)
 
-// 鐩戝惉绐楀彛澶у皬鍙樺寲
+// 响应式处理窗口大小变化
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
 }
@@ -46,29 +51,53 @@ if (typeof window !== 'undefined') {
   checkMobile()
 }
 
-// 璺宠浆鍒版寚瀹氳矾鐢?
+// 导航跳转
 const navigate = (path: string) => {
   router.push(path)
-  // 绉诲姩绔偣鍑诲悗鍏抽棴渚ц竟鏍?
+  // 在移动端点击菜单项后关闭侧边栏
   if (isMobile.value) {
     uiStore.closeSidebar()
   }
 }
 
-// 鍒囨崲渚ц竟鏍?
+// 切换侧边栏
 const toggleSidebar = () => {
   uiStore.toggleSidebar()
 }
 
-// 鍏抽棴渚ц竟鏍?
+// 关闭侧边栏
 const closeSidebar = () => {
   uiStore.closeSidebar()
+}
+
+// 用户菜单显示状态
+const showUserMenu = ref(false)
+
+// 登出
+const handleLogout = async () => {
+  try {
+    await logout()
+    userStore.logout()
+    uiStore.showToast('已登出', 'success')
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    // 即使请求失败也清除本地状态
+    userStore.logout()
+    router.push('/login')
+  }
+  showUserMenu.value = false
+}
+
+// 切换用户菜单
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
 }
 </script>
 
 <template>
   <div class="layout">
-    <!-- 閬僵灞?(绉诲姩绔? -->
+    <!-- 移动端遮罩层 (点击关闭侧边栏) -->
     <Transition name="fade">
       <div
         v-if="isMobile && uiStore.isSidebarOpen"
@@ -77,7 +106,7 @@ const closeSidebar = () => {
       ></div>
     </Transition>
 
-    <!-- 渚ц竟鏍?-->
+    <!-- 侧边栏 -->
     <aside class="sidebar" :class="{ 'mobile': isMobile, 'open': uiStore.isSidebarOpen }">
       <!-- Logo -->
       <div class="sidebar-header">
@@ -85,13 +114,13 @@ const closeSidebar = () => {
           <Heart :size="28" class="logo-icon" />
           <span class="logo-text">LoveZs</span>
         </div>
-        <!-- 鍏抽棴鎸夐挳 (绉诲姩绔? -->
+        <!-- 关闭按钮 (仅移动端) -->
         <button v-if="isMobile" class="close-btn" @click="closeSidebar">
           <X :size="24" />
         </button>
       </div>
 
-      <!-- 瀵艰埅鑿滃崟 -->
+      <!-- 菜单导航 -->
       <nav class="sidebar-nav">
         <ul class="nav-list">
           <li
@@ -108,15 +137,33 @@ const closeSidebar = () => {
         </ul>
       </nav>
 
-      <!-- 搴曢儴淇℃伅 -->
+      <!-- 底部用户信息 -->
       <div class="sidebar-footer">
-        <p class="footer-text">记录美好时光 💕</p>
+        <div class="user-section">
+          <div class="user-info" @click="toggleUserMenu">
+            <div class="user-avatar">
+              <User :size="18" />
+            </div>
+            <div class="user-details">
+              <p class="user-name">{{ userStore.username || '用户' }}</p>
+              <p class="user-email">{{ userStore.email || '' }}</p>
+            </div>
+          </div>
+          <Transition name="fade">
+            <div v-if="showUserMenu" class="user-menu">
+              <button class="logout-btn" @click="handleLogout">
+                <LogOut :size="16" />
+                <span>登出</span>
+              </button>
+            </div>
+          </Transition>
+        </div>
       </div>
     </aside>
 
-    <!-- 涓诲唴瀹瑰尯鍩?-->
+    <!-- 主内容区域 -->
     <main class="main-content">
-      <!-- 椤堕儴鏍?(绉诲姩绔眽鍫¤彍鍗? -->
+      <!-- 顶部导航栏 (仅移动端) -->
       <header v-if="isMobile" class="top-bar">
         <button class="menu-btn" @click="toggleSidebar">
           <Menu :size="24" />
@@ -126,25 +173,17 @@ const closeSidebar = () => {
         </div>
       </header>
 
-      <!-- 椤甸潰鍐呭 -->
+      <!-- 页面内容 -->
       <div class="page-content">
         <router-view />
       </div>
     </main>
-
-    <!-- Toast 閫氱煡 -->
-    <Transition name="slide-up">
-      <div v-if="uiStore.toast.show" class="toast" :class="uiStore.toast.type">
-        <span>{{ uiStore.toast.message }}</span>
-        <button class="toast-close" @click="uiStore.hideToast">脳</button>
-      </div>
-    </Transition>
   </div>
 </template>
 
 <style scoped>
 /* ========================================
-   甯冨眬鏍峰紡
+   全局布局
    ======================================== */
 .layout {
   display: flex;
@@ -152,7 +191,7 @@ const closeSidebar = () => {
 }
 
 /* ========================================
-   渚ц竟鏍忔牱寮?
+   侧边栏样式
    ======================================== */
 .sidebar {
   width: 248px;
@@ -273,14 +312,93 @@ const closeSidebar = () => {
   border-top: 1px solid var(--border-soft);
 }
 
-.footer-text {
-  margin: 0;
-  font-size: 0.8125rem;
-  color: var(--text-secondary);
-  text-align: center;
+.user-section {
+  position: relative;
 }
 
-/* 閬僵灞?*/
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem;
+  border-radius: 0.625rem;
+  cursor: pointer;
+  transition: background-color var(--dur-fast);
+}
+
+.user-info:hover {
+  background: var(--pink-50);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pink-500) 0%, var(--rose-500) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.user-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.user-name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 0.5rem;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+
+.logout-btn:hover {
+  background: var(--pink-50);
+  color: var(--pink-500);
+}
+
+/* 遮罩层 */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -290,7 +408,7 @@ const closeSidebar = () => {
 }
 
 /* ========================================
-   涓诲唴瀹瑰尯鍩熸牱寮?
+   主内容区域样式
    ======================================== */
 .main-content {
   flex: 1;
@@ -305,7 +423,7 @@ const closeSidebar = () => {
   }
 }
 
-/* 椤堕儴鏍?(绉诲姩绔? */
+/* 顶部导航栏 (仅移动端) */
 .top-bar {
   display: none;
   height: 60px;
@@ -349,7 +467,7 @@ const closeSidebar = () => {
   }
 }
 
-/* 椤甸潰鍐呭 */
+/* 页面内容 */
 .page-content {
   flex: 1;
   padding: 1.75rem;
@@ -365,63 +483,7 @@ const closeSidebar = () => {
 }
 
 /* ========================================
-   Toast 閫氱煡鏍峰紡
-   ======================================== */
-.toast {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  max-width: min(92vw, 420px);
-  color: var(--text-primary);
-  background: #fff7fa;
-  border: 1px solid transparent;
-  padding: 0.875rem 1rem;
-  border-radius: 0.875rem;
-  box-shadow: var(--shadow-soft);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.toast.success {
-  border-color: #bde7d4;
-  background: #ecfaf3;
-}
-
-.toast.error {
-  border-color: #f7c6cf;
-  background: #fff1f3;
-}
-
-.toast.info {
-  border-color: #cfe4ff;
-  background: #eff6ff;
-}
-
-.toast.warning {
-  border-color: #f6dfb9;
-  background: #fff8ea;
-}
-
-.toast-close {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1.25rem;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  transition: color var(--dur-base);
-}
-
-.toast-close:hover {
-  color: var(--text-primary);
-}
-
-/* ========================================
-   杩囨浮鍔ㄧ敾
+   动画效果
    ======================================== */
 .fade-enter-active,
 .fade-leave-active {
@@ -445,12 +507,5 @@ const closeSidebar = () => {
 }
 
 @media (max-width: 768px) {
-  .toast {
-    left: 1rem;
-    right: 1rem;
-    bottom: 1rem;
-    max-width: none;
-  }
 }
 </style>
-
