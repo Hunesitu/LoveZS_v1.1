@@ -6,7 +6,17 @@ LoveZs API Serializers
 """
 
 from rest_framework import serializers
-from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown
+from django.contrib.auth import get_user_model
+from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment
+
+User = get_user_model()
+
+
+class UserBasicSerializer(serializers.ModelSerializer):
+    """用户基本信息序列化器"""
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email']
 
 
 # ========================================
@@ -18,12 +28,14 @@ class AlbumSerializer(serializers.ModelSerializer):
     相册序列化器
     """
     photo_count = serializers.SerializerMethodField()
+    created_by_details = UserBasicSerializer(source='created_by', read_only=True)
 
     class Meta:
         model = Album
         fields = [
             'id', 'name', 'description', 'cover_photo',
-            'is_default', 'photo_count', 'created_at', 'updated_at'
+            'is_default', 'photo_count', 'created_by', 'created_by_details',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -62,6 +74,7 @@ class PhotoSerializer(serializers.ModelSerializer):
 
     # 相册信息（嵌套序列化）
     album_details = AlbumSerializer(source='album', read_only=True)
+    created_by_details = UserBasicSerializer(source='created_by', read_only=True)
 
     class Meta:
         model = Photo
@@ -70,7 +83,8 @@ class PhotoSerializer(serializers.ModelSerializer):
             'size', 'size_formatted', 'mimetype',
             'album', 'album_details',
             'description', 'location', 'exif', 'compressed_url',
-            'thumbnail_url', 'created_at', 'updated_at'
+            'thumbnail_url', 'created_by', 'created_by_details',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -128,6 +142,18 @@ class DiaryTagSerializer(serializers.ModelSerializer):
         fields = ['id', 'tag']
 
 
+class DiaryCommentSerializer(serializers.ModelSerializer):
+    """
+    日记评论序列化器
+    """
+    created_by_details = UserBasicSerializer(source='created_by', read_only=True)
+
+    class Meta:
+        model = DiaryComment
+        fields = ['id', 'content', 'created_by', 'created_by_details', 'created_at']
+        read_only_fields = ['id', 'created_by', 'created_at']
+
+
 class DiarySerializer(serializers.ModelSerializer):
     """
     日记序列化器
@@ -138,6 +164,8 @@ class DiarySerializer(serializers.ModelSerializer):
 
     # 关联数据
     attached_photos = PhotoSerializer(many=True, read_only=True)
+    created_by_details = UserBasicSerializer(source='created_by', read_only=True)
+    comments = DiaryCommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Diary
@@ -146,6 +174,8 @@ class DiarySerializer(serializers.ModelSerializer):
             'date', 'formatted_date',
             'attached_photos',
             'word_count',
+            'created_by', 'created_by_details',
+            'comments',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -159,6 +189,7 @@ class DiaryListSerializer(serializers.ModelSerializer):
     word_count = serializers.ReadOnlyField()
     photo_count = serializers.SerializerMethodField()
     attached_photos = PhotoSerializer(many=True, read_only=True)
+    created_by_details = UserBasicSerializer(source='created_by', read_only=True)
 
     class Meta:
         model = Diary
@@ -167,6 +198,7 @@ class DiaryListSerializer(serializers.ModelSerializer):
             'date', 'formatted_date',
             'attached_photos',
             'word_count', 'photo_count',
+            'created_by', 'created_by_details',
             'created_at'
         ]
 
@@ -190,8 +222,11 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
         model = Diary
         fields = [
             'title', 'content', 'mood', 'category',
-            'date', 'photo_ids'
+            'date', 'photo_ids', 'created_by'
         ]
+        extra_kwargs = {
+            'created_by': {'required': False}
+        }
 
     def create(self, validated_data):
         """
@@ -252,6 +287,9 @@ class CountdownSerializer(serializers.ModelSerializer):
     recurring_month = serializers.IntegerField(required=False, allow_null=True)
     recurring_day = serializers.IntegerField(required=False, allow_null=True)
 
+    # 创建者信息
+    created_by_details = UserBasicSerializer(source='created_by', read_only=True)
+
     class Meta:
         model = Countdown
         fields = [
@@ -260,6 +298,7 @@ class CountdownSerializer(serializers.ModelSerializer):
             'is_recurring', 'recurring_type',
             'recurring_month', 'recurring_day',
             'days', 'absolute_days', 'status',
+            'created_by', 'created_by_details',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -329,3 +368,43 @@ class CategoryListSerializer(serializers.Serializer):
 class TagListSerializer(serializers.Serializer):
     """标签列表序列化器"""
     tags = serializers.ListField(child=serializers.CharField())
+
+
+# ========================================
+# User Serializers
+# ========================================
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    用户序列化器
+    """
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'date_joined']
+        read_only_fields = ['id', 'is_staff', 'date_joined']
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    """
+    用户注册序列化器（简化版：不需要邮箱）
+    """
+    class Meta:
+        model = User
+        fields = ['username', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def validate_password(self, value):
+        """验证密码：仅要求最少6个字符"""
+        if len(value) < 6:
+            raise serializers.ValidationError('密码至少需要6个字符')
+        return value
+
+    def create(self, validated_data):
+        """创建用户"""
+        password = validated_data.pop('password')
+        user = User.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user

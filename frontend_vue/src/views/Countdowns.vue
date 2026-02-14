@@ -7,12 +7,14 @@ Countdowns 页面
 import { ref, computed, onMounted } from 'vue'
 import { useCountdowns } from '@/composables/useCountdowns'
 import { useUiStore } from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
 import { Plus, Trash2, Calendar as CalendarIcon, Heart, Clock } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import type { Countdown, CreateCountdownRequest } from '@/types'
 
 const { countdowns, isLoading, loadCountdowns, createCountdown, deleteCountdown } = useCountdowns()
 const uiStore = useUiStore()
+const userStore = useUserStore()
 
 // 表单状态
 const title = ref('')
@@ -201,8 +203,8 @@ onMounted(() => {
       <p class="page-subtitle">记录那些重要的日子</p>
     </div>
 
-    <!-- 创建表单 -->
-    <div class="card form-card">
+    <!-- 创建表单（仅管理员可见） -->
+    <div v-if="userStore.isAdmin" class="card form-card">
       <h2 class="section-title">添加新重要日</h2>
       <form @submit.prevent="handleCreate" class="create-form">
         <div class="form-group">
@@ -328,6 +330,7 @@ onMounted(() => {
             </div>
           </div>
           <button
+            v-if="userStore.isAdmin"
             @click="handleDelete(c.id)"
             class="delete-btn"
             title="删除"

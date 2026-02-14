@@ -22,15 +22,17 @@ from django.http import FileResponse, JsonResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from PIL import Image
-from rest_framework import viewsets, filters, status
+from rest_framework import viewsets, filters, status, permissions
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
-from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown
+from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment
+from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
     PhotoSerializer, PhotoListSerializer, PhotoCreateSerializer,
     DiarySerializer, DiaryListSerializer, DiaryCreateSerializer,
+    DiaryCommentSerializer,
     CountdownSerializer, CountdownListSerializer,
     CategoryListSerializer, TagListSerializer,
 )
@@ -73,12 +75,19 @@ class DiaryViewSet(viewsets.ModelViewSet):
     """
     日记 API 视图集
     """
-    queryset = Diary.objects.prefetch_related('attached_photos').all()
+    queryset = Diary.objects.prefetch_related(
+        'attached_photos', 'comments', 'comments__created_by'
+    ).select_related('created_by').all()
+    permission_classes = [IsOwnerOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'mood', 'date']
     search_fields = ['title', 'content']
     ordering_fields = ['date', 'created_at']
-    ordering = ['-date']
+    ordering = ['-created_at']
+
+    def perform_create(self, serializer):
+        """创建时自动设置创建者"""
+        return serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         """根据操作选择序列化器"""
@@ -128,9 +137,9 @@ class DiaryViewSet(viewsets.ModelViewSet):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        diary = self.perform_create(serializer)
 
-        diary_serializer = DiarySerializer(serializer.instance)
+        diary_serializer = DiarySerializer(diary)
         return success_response(
             {'diary': diary_serializer.data},
             message='日记创建成功'
@@ -225,6 +234,49 @@ class DiaryViewSet(viewsets.ModelViewSet):
         serializer = TagListSerializer({'tags': list(tags)})
         return success_response(serializer.data)
 
+    @action(detail=True, methods=['get', 'post'], url_path='comments',
+            permission_classes=[permissions.IsAuthenticated])
+    def comments(self, request, pk=None):
+        """
+        获取/发表日记评论
+        GET  /api/diaries/{id}/comments/ — 获取评论列表
+        POST /api/diaries/{id}/comments/ — 发表评论
+        """
+        diary = self.get_object()
+
+        if request.method == 'GET':
+            comments_qs = diary.comments.select_related('created_by').all()
+            serializer = DiaryCommentSerializer(comments_qs, many=True)
+            return success_response({'comments': serializer.data})
+
+        # POST
+        serializer = DiaryCommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(diary=diary, created_by=request.user)
+        return success_response(
+            {'comment': serializer.data},
+            message='评论发表成功'
+        )
+
+    @action(detail=True, methods=['delete'], url_path='comments/(?P<comment_id>[^/.]+)',
+            permission_classes=[permissions.IsAuthenticated])
+    def delete_comment(self, request, pk=None, comment_id=None):
+        """
+        删除评论（仅评论作者可删除）
+        DELETE /api/diaries/{id}/comments/{comment_id}/
+        """
+        diary = self.get_object()
+        try:
+            comment = DiaryComment.objects.get(id=comment_id, diary=diary)
+        except DiaryComment.DoesNotExist:
+            return error_response('评论不存在', status.HTTP_404_NOT_FOUND)
+
+        if comment.created_by != request.user:
+            return error_response('只能删除自己的评论', status.HTTP_403_FORBIDDEN)
+
+        comment.delete()
+        return success_response(message='评论删除成功')
+
 
 # ========================================
 # Photo ViewSet
@@ -235,12 +287,17 @@ class PhotoViewSet(viewsets.ModelViewSet):
     """
     照片 API 视图集
     """
-    queryset = Photo.objects.select_related('album').all()
+    queryset = Photo.objects.select_related('album', 'created_by').all()
+    permission_classes = [IsOwnerOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['album']
     search_fields = ['original_name', 'description']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
+
+    def perform_create(self, serializer):
+        """创建时自动设置上传者"""
+        serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         """根据操作选择序列化器"""
@@ -350,12 +407,17 @@ class CountdownViewSet(viewsets.ModelViewSet):
     """
     重要日 API 视图集
     """
-    queryset = Countdown.objects.all()
+    queryset = Countdown.objects.select_related('created_by').all()
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['type', 'direction']
     search_fields = ['title', 'description']
     ordering_fields = ['target_date']
     ordering = ['target_date']
+
+    def perform_create(self, serializer):
+        """创建时自动设置创建者"""
+        return serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         """根据操作选择序列化器"""
@@ -403,9 +465,9 @@ class CountdownViewSet(viewsets.ModelViewSet):
             else:
                 serializer.validated_data['direction'] = 'countdown'
 
-        self.perform_create(serializer)
+        countdown = self.perform_create(serializer)
         return success_response(
-            {'countdown': serializer.data},
+            {'countdown': CountdownSerializer(countdown).data},
             message='重要日创建成功'
         )
 

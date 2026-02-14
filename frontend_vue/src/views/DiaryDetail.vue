@@ -5,20 +5,28 @@ DiaryDetail 页面
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Edit2, X } from 'lucide-vue-next'
+import { ArrowLeft, Edit2, X, Trash2, Send } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useUiStore } from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
 import { resolveMediaUrl } from '@/utils/media'
 import diaryService from '@/api/diary'
-import type { Diary, Photo } from '@/types'
+import { api } from '@/api/client'
+import type { Diary, Photo, DiaryComment } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const userStore = useUserStore()
 
 const diary = ref<Diary | null>(null)
 const isLoading = ref(false)
 const previewPhoto = ref<Photo | null>(null)
+
+// 评论相关
+const commentContent = ref('')
+const isSubmittingComment = ref(false)
+const comments = ref<DiaryComment[]>([])
 
 const diaryId = computed(() => Number(route.params.id))
 
@@ -47,6 +55,7 @@ const getDiaryDetail = async () => {
   try {
     const response = await diaryService.getDiary(diaryId.value)
     diary.value = response.diary
+    comments.value = response.diary.comments || []
   } catch (error) {
     console.error('Load diary detail error:', error)
     uiStore.showToast('加载日记失败', 'error')
@@ -68,6 +77,36 @@ const stopBubbling = (event: MouseEvent) => {
   event.stopPropagation()
 }
 
+const submitComment = async () => {
+  if (!commentContent.value.trim()) return
+  isSubmittingComment.value = true
+  try {
+    const response = await api.post(`/diaries/${diaryId.value}/comments/`, {
+      content: commentContent.value.trim()
+    })
+    comments.value.unshift(response.data.comment)
+    commentContent.value = ''
+    uiStore.showToast('评论发表成功', 'success')
+  } catch (error) {
+    console.error('Submit comment error:', error)
+    uiStore.showToast('评论发表失败', 'error')
+  } finally {
+    isSubmittingComment.value = false
+  }
+}
+
+const deleteComment = async (commentId: number) => {
+  if (!window.confirm('确定删除这条评论吗？')) return
+  try {
+    await api.delete(`/diaries/${diaryId.value}/comments/${commentId}/`)
+    comments.value = comments.value.filter(c => c.id !== commentId)
+    uiStore.showToast('评论已删除', 'success')
+  } catch (error) {
+    console.error('Delete comment error:', error)
+    uiStore.showToast('删除评论失败', 'error')
+  }
+}
+
 onMounted(() => {
   getDiaryDetail()
 })
@@ -81,7 +120,7 @@ onMounted(() => {
         <span class="ml-2">返回列表</span>
       </button>
       <button
-        v-if="diary"
+        v-if="diary && diary.created_by === userStore.user?.id"
         class="btn-primary"
         @click="router.push(`/diaries/${diary.id}/edit`)"
       >
@@ -101,9 +140,10 @@ onMounted(() => {
           <h1 class="title">{{ diary.title }}</h1>
         </div>
         <div class="meta-line">
-          <span>{{ dayjs(diary.date).format('YYYY-MM-DD') }}</span>
+          <span>{{ dayjs(diary.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
           <span>·</span>
           <span>{{ diary.category }}</span>
+          <span v-if="diary.created_by_details">· {{ diary.created_by_details.username }}</span>
           <span v-if="diary.word_count">· {{ diary.word_count }} 词</span>
         </div>
       </header>
@@ -132,6 +172,53 @@ onMounted(() => {
             />
           </button>
         </div>
+      </section>
+
+      <!-- 评论区 -->
+      <section class="comments-section">
+        <h3 class="comments-title">评论（{{ comments.length }}）</h3>
+
+        <!-- 发表评论 -->
+        <div v-if="userStore.isAuthenticated" class="comment-form">
+          <textarea
+            v-model="commentContent"
+            class="comment-input"
+            placeholder="写下你的评论..."
+            rows="3"
+            maxlength="1000"
+          ></textarea>
+          <div class="comment-form-actions">
+            <span class="char-count">{{ commentContent.length }}/1000</span>
+            <button
+              class="btn-primary btn-sm"
+              :disabled="!commentContent.trim() || isSubmittingComment"
+              @click="submitComment"
+            >
+              <Send :size="14" />
+              <span class="ml-2">{{ isSubmittingComment ? '发送中...' : '发表' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 评论列表 -->
+        <div v-if="comments.length > 0" class="comments-list">
+          <div v-for="comment in comments" :key="comment.id" class="comment-item">
+            <div class="comment-header">
+              <span class="comment-author">{{ comment.created_by_details?.username || '匿名' }}</span>
+              <span class="comment-time">{{ dayjs(comment.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
+            </div>
+            <p class="comment-content">{{ comment.content }}</p>
+            <button
+              v-if="comment.created_by === userStore.user?.id"
+              class="comment-delete-btn"
+              @click="deleteComment(comment.id)"
+            >
+              <Trash2 :size="13" />
+              <span>删除</span>
+            </button>
+          </div>
+        </div>
+        <p v-else class="no-comments">暂无评论</p>
       </section>
     </article>
 
@@ -342,6 +429,129 @@ onMounted(() => {
   border-top: 3px solid var(--pink-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+/* 评论区样式 */
+.comments-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.comments-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.comment-form {
+  margin-bottom: 1rem;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background-color: #fff;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color var(--dur-base), box-shadow var(--dur-base);
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: var(--pink-300);
+  box-shadow: var(--shadow-focus);
+  background-color: #fff9fc;
+}
+
+.comment-form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.char-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8125rem;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.comment-item {
+  padding: 0.75rem;
+  background: var(--bg-soft, #fafafa);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.comment-author {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pink-500);
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.comment-content {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  color: #af94a2;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  transition: color var(--dur-base), background-color var(--dur-base);
+}
+
+.comment-delete-btn:hover {
+  color: #c45c7c;
+  background: #fff2f6;
+  border-color: #f2bfd1;
+}
+
+.no-comments {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 1rem 0;
 }
 
 .ml-2 {
