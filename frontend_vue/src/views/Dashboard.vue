@@ -5,6 +5,7 @@ Dashboard 页面
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useDiaries } from '@/composables/useDiaries'
+import { resolveMediaUrl } from '@/utils/media'
 import { BookOpen, Heart, Calendar, Plus } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
@@ -39,7 +40,7 @@ const diaryCount = computed(() => diaries.value.length)
 
 const loadDashboardData = async () => {
   try {
-    await loadDiaries({ limit: 3 })
+    await loadDiaries({ limit: 6 })
 
     // 计算恋爱天数
     const days = calculateLoveDays()
@@ -66,7 +67,7 @@ const getMoodEmoji = (mood: string) => {
   return moodEmojis[mood] || '😊'
 }
 
-const stripMarkdown = (content: string, maxLength = 80) => {
+const stripMarkdown = (content: string, maxLength = 120) => {
   return content
     .replace(/[#*`_\[\]]/g, '')
     .substring(0, maxLength)
@@ -170,19 +171,37 @@ onMounted(() => {
         <div class="spinner"></div>
       </div>
 
-      <div v-else-if="diaries.length > 0" class="diary-list">
+      <div v-else-if="diaries.length > 0" class="diary-grid">
         <RouterLink
           v-for="diary in diaries"
           :key="diary.id"
           :to="`/diaries/${diary.id}`"
-          class="diary-item"
+          class="diary-card"
         >
-          <div class="diary-content">
-            <span class="diary-mood">{{ getMoodEmoji(diary.mood) }}</span>
-            <div class="diary-info">
-              <h3 class="diary-title">{{ diary.title }}</h3>
-              <p class="diary-preview">{{ stripMarkdown(diary.content) }}...</p>
-              <p class="diary-date">{{ dayjs(diary.date).format('YYYY-MM-DD') }}</p>
+          <!-- 封面图 -->
+          <div v-if="diary.attached_photos?.length" class="card-cover">
+            <img
+              :src="resolveMediaUrl(diary.attached_photos[0].url || diary.attached_photos[0].thumbnail_url || '')"
+              :alt="diary.attached_photos[0].original_name"
+              class="cover-image"
+            />
+          </div>
+          <!-- 文字区 -->
+          <div class="card-body">
+            <div class="card-title-row">
+              <span class="diary-mood">{{ getMoodEmoji(diary.mood) }}</span>
+              <h3 class="diary-title">
+                <span v-if="!diary.is_public" class="private-badge">🔒</span>
+                {{ diary.title }}
+              </h3>
+            </div>
+            <p class="diary-preview">{{ stripMarkdown(diary.content) }}...</p>
+            <div class="card-footer">
+              <span class="category-badge">{{ diary.category }}</span>
+              <span class="diary-date">
+                {{ dayjs(diary.date).format('M月D日') }}
+                <template v-if="diary.created_by_details"> · {{ diary.created_by_details.display_name || diary.created_by_details.username }}</template>
+              </span>
             </div>
           </div>
         </RouterLink>
@@ -401,59 +420,104 @@ onMounted(() => {
   }
 }
 
-.diary-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+.diary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
 
-.diary-item {
+.diary-card {
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: #fff;
   text-decoration: none;
   color: inherit;
+  overflow: hidden;
   transition: transform var(--dur-fast), box-shadow var(--dur-base), border-color var(--dur-base);
 }
 
-.diary-item:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-soft);
+.diary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(217, 117, 154, 0.15);
   border-color: var(--border-strong);
 }
 
-.diary-content {
+.card-cover {
+  width: 100%;
+  overflow: hidden;
+}
+
+.cover-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
+.card-body {
+  padding: 0.85rem;
+}
+
+.card-title-row {
   display: flex;
-  gap: 0.65rem;
-  align-items: flex-start;
-  padding: 0.75rem;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .diary-mood {
   font-size: 1.15rem;
-}
-
-.diary-info {
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .diary-title {
   margin: 0;
   font-size: 0.95rem;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.private-badge {
+  margin-right: 0.25rem;
+  font-size: 0.85rem;
 }
 
 .diary-preview {
-  margin: 0.25rem 0 0;
+  margin: 0.4rem 0 0;
   color: var(--text-secondary);
   font-size: 0.84rem;
-  line-height: 1.5;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  gap: 0.5rem;
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #ffeaf3;
+  color: #a55674;
+  flex-shrink: 0;
 }
 
 .diary-date {
-  margin: 0.35rem 0 0;
   color: #a38998;
   font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -509,6 +573,10 @@ onMounted(() => {
 
   .actions-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .diary-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>
