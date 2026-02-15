@@ -23,7 +23,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from PIL import Image
 from rest_framework import viewsets, filters, status, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
@@ -515,15 +515,17 @@ def backup_export(request):
     return FileResponse(temp_file, as_attachment=True, filename=filename)
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
 def clear_all_data(request):
     """
     清除全部数据（数据库 + 媒体文件）
     POST /api/admin/clear
+    仅管理员可操作
     """
-    if request.method != 'POST':
-        return error_response('仅支持 POST 请求', status.HTTP_405_METHOD_NOT_ALLOWED)
 
     with transaction.atomic():
+        DiaryComment.objects.all().delete()
         DiaryPhoto.objects.all().delete()
         DiaryTag.objects.all().delete()
         Diary.objects.all().delete()
