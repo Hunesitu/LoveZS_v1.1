@@ -181,8 +181,8 @@ onMounted(() => {
           <!-- 封面图 -->
           <div v-if="diary.attached_photos?.length" class="card-cover">
             <img
-              :src="resolveMediaUrl(diary.attached_photos[0].url || diary.attached_photos[0].thumbnail_url || '')"
-              :alt="diary.attached_photos[0].original_name"
+              :src="resolveMediaUrl(diary.attached_photos![0].url || diary.attached_photos![0].thumbnail_url || '')"
+              :alt="diary.attached_photos![0].original_name"
               class="cover-image"
             />
           </div>
@@ -200,7 +200,7 @@ onMounted(() => {
               <span class="category-badge">{{ diary.category }}</span>
               <span class="diary-date">
                 {{ dayjs(diary.date).format('M月D日') }}
-                <template v-if="diary.created_by_details"> · {{ diary.created_by_details.display_name || diary.created_by_details.username }}</template>
+                <template v-if="diary.created_by_details"> · {{ diary.created_by_details.username }}</template>
               </span>
             </div>
           </div>
