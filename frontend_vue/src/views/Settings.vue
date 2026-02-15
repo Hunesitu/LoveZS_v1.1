@@ -6,10 +6,12 @@ Settings 页面
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
 import { Download, Trash2, Settings as SettingsIcon } from 'lucide-vue-next'
 import api from '@/api/client'
 
 const uiStore = useUiStore()
+const userStore = useUserStore()
 
 const isExporting = ref(false)
 const isClearing = ref(false)
@@ -119,8 +121,8 @@ const handleClearAllData = async () => {
       </div>
     </div>
 
-    <!-- 危险区域 -->
-    <div class="card danger-card">
+    <!-- 危险区域（仅管理员可见） -->
+    <div v-if="userStore.isAdmin" class="card danger-card">
       <h2 class="section-title danger-title">危险区域</h2>
       <p class="section-description">
         这些操作不可撤销，请谨慎操作
