@@ -27,6 +27,8 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
+from django.db.models import Q
+
 from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
@@ -75,15 +77,21 @@ class DiaryViewSet(viewsets.ModelViewSet):
     """
     日记 API 视图集
     """
-    queryset = Diary.objects.prefetch_related(
-        'attached_photos', 'comments', 'comments__created_by'
-    ).select_related('created_by').all()
     permission_classes = [IsOwnerOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'mood', 'date']
     search_fields = ['title', 'content']
     ordering_fields = ['date', 'created_at']
     ordering = ['-created_at']
+
+    def get_queryset(self):
+        """公开日记所有人可见，私密日记仅作者可见"""
+        qs = Diary.objects.prefetch_related(
+            'attached_photos', 'comments', 'comments__created_by'
+        ).select_related('created_by')
+        if self.request.user.is_authenticated:
+            return qs.filter(Q(is_public=True) | Q(created_by=self.request.user))
+        return qs.filter(is_public=True)
 
     def perform_create(self, serializer):
         """创建时自动设置创建者"""

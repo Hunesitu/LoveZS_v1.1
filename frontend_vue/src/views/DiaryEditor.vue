@@ -30,6 +30,7 @@ const formData = ref<CreateDiaryRequest>({
   mood: 'happy',
   category: '生活',
   date: dayjs().format('YYYY-MM-DD'),
+  is_public: true,
   photo_ids: []
 })
 
@@ -75,6 +76,7 @@ const loadDiaryForEdit = async () => {
       mood: diary.mood,
       category: diary.category,
       date: diary.date,
+      is_public: diary.is_public !== false,
       photo_ids: (diary.attached_photos || []).map(photo => photo.id),
     }
     uploadedPhotos.value = [...(diary.attached_photos || [])]
@@ -251,14 +253,29 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 分类 -->
-      <div class="form-group">
-        <label class="form-label">分类</label>
-        <select v-model="formData.category" class="input-field">
-          <option v-for="cat in categoryOptions" :key="cat" :value="cat">
-            {{ cat }}
-          </option>
-        </select>
+      <!-- 分类与可见性 -->
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label">分类</label>
+          <select v-model="formData.category" class="input-field">
+            <option v-for="cat in categoryOptions" :key="cat" :value="cat">
+              {{ cat }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">可见性</label>
+          <div class="visibility-toggle">
+            <label class="radio-option" :class="{ active: formData.is_public !== false }">
+              <input type="radio" :value="true" v-model="formData.is_public" />
+              <span>🌐 公开</span>
+            </label>
+            <label class="radio-option" :class="{ active: formData.is_public === false }">
+              <input type="radio" :value="false" v-model="formData.is_public" />
+              <span>🔒 私密</span>
+            </label>
+          </div>
+        </div>
       </div>
 
       <!-- 内容 -->
@@ -533,6 +550,37 @@ onMounted(() => {
 
 .ml-2 {
   margin-left: 0.5rem;
+}
+
+.visibility-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--dur-base), background-color var(--dur-base), color var(--dur-base);
+  flex: 1;
+  justify-content: center;
+}
+
+.radio-option input[type="radio"] {
+  display: none;
+}
+
+.radio-option.active {
+  border-color: var(--pink-300);
+  background: var(--pink-50);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 @media (min-width: 640px) {

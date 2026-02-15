@@ -188,6 +188,7 @@ export interface Diary {
   category: string
   date: string
   formatted_date?: string
+  is_public?: boolean
   attached_photos?: Photo[]
   word_count?: number
   comments?: DiaryComment[]
@@ -311,6 +312,7 @@ export interface CreateDiaryRequest {
   mood: Mood
   category: string
   date?: string
+  is_public?: boolean
   photo_ids?: number[]
 }
 
