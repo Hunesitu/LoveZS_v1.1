@@ -137,7 +137,10 @@ onMounted(() => {
       <header class="card-header">
         <div class="title-wrap">
           <span class="mood-emoji">{{ getMoodEmoji(diary.mood) }}</span>
-          <h1 class="title">{{ diary.title }}</h1>
+          <h1 class="title">
+            <span v-if="diary.is_public === false" class="private-badge">🔒</span>
+            {{ diary.title }}
+          </h1>
         </div>
         <div class="meta-line">
           <span>{{ dayjs(diary.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
@@ -309,6 +312,14 @@ onMounted(() => {
   margin: 0;
   font-size: 1.55rem;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.private-badge {
+  font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 .meta-line {

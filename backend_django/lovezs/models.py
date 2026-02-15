@@ -259,6 +259,7 @@ class Diary(models.Model):
         verbose_name='日期',
         db_index=True
     )
+    is_public = models.BooleanField(default=True, verbose_name='是否公开')
 
     def save(self, *args, **kwargs):
         # 确保 date 字段是 date 类型而不是 datetime

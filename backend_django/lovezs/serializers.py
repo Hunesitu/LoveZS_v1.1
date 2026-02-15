@@ -171,7 +171,7 @@ class DiarySerializer(serializers.ModelSerializer):
         model = Diary
         fields = [
             'id', 'title', 'content', 'mood', 'category',
-            'date', 'formatted_date',
+            'date', 'formatted_date', 'is_public',
             'attached_photos',
             'word_count',
             'created_by', 'created_by_details',
@@ -195,7 +195,7 @@ class DiaryListSerializer(serializers.ModelSerializer):
         model = Diary
         fields = [
             'id', 'title', 'content', 'mood', 'category',
-            'date', 'formatted_date',
+            'date', 'formatted_date', 'is_public',
             'attached_photos',
             'word_count', 'photo_count',
             'created_by', 'created_by_details',
@@ -222,7 +222,7 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
         model = Diary
         fields = [
             'title', 'content', 'mood', 'category',
-            'date', 'photo_ids', 'created_by'
+            'date', 'is_public', 'photo_ids', 'created_by'
         ]
         extra_kwargs = {
             'created_by': {'required': False}

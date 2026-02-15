@@ -186,7 +186,10 @@ onMounted(() => {
           <div class="header-left">
             <span class="mood-emoji">{{ getMoodEmoji(diary.mood) }}</span>
             <div class="diary-meta">
-              <h3 class="diary-title">{{ diary.title }}</h3>
+              <h3 class="diary-title">
+                <span v-if="diary.is_public === false" class="private-badge">🔒</span>
+                {{ diary.title }}
+              </h3>
               <p class="diary-date">
                 {{ dayjs(diary.created_at).format('YYYY-MM-DD HH:mm:ss') }}
                 <span v-if="diary.created_by_details" class="diary-author">· {{ diary.created_by_details.username }}</span>
@@ -458,6 +461,14 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.private-badge {
+  font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 .diary-date {
