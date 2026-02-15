@@ -181,8 +181,8 @@ onMounted(() => {
           <!-- 封面图 -->
           <div v-if="diary.attached_photos?.length" class="card-cover">
             <img
-              :src="resolveMediaUrl(diary.attached_photos![0].url || diary.attached_photos![0].thumbnail_url || '')"
-              :alt="diary.attached_photos![0].original_name"
+              :src="resolveMediaUrl(diary.attached_photos?.[0]?.url || diary.attached_photos?.[0]?.thumbnail_url || '')"
+              :alt="diary.attached_photos?.[0]?.original_name"
               class="cover-image"
             />
           </div>
