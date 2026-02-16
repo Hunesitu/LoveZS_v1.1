@@ -27,6 +27,7 @@ db.sqlite3
 db.sqlite3-journal
 /media/
 /staticfiles/
+backend_django/media/
 backend_django/nul
 # Vue
 node_modules/
