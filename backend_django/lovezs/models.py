@@ -568,6 +568,14 @@ class DiaryComment(models.Model):
         related_name='comments',
         verbose_name='所属日记'
     )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='replies',
+        verbose_name='父评论'
+    )
     content = models.TextField(
         max_length=1000,
         verbose_name='评论内容'

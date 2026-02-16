@@ -5,11 +5,11 @@ DiaryDetail 页面
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Edit2, X, Trash2, Send, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { ArrowLeft, Edit2, X, Trash2, Send, ChevronLeft, ChevronRight, Reply } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
-import { resolveMediaUrl } from '@/utils/media'
+import { resolveMediaUrl, isVideo } from '@/utils/media'
 import diaryService from '@/api/diary'
 import { api } from '@/api/client'
 import type { Diary, Photo, DiaryComment } from '@/types'
@@ -32,6 +32,15 @@ const previewPhoto = computed(() =>
 const commentContent = ref('')
 const isSubmittingComment = ref(false)
 const comments = ref<DiaryComment[]>([])
+
+// 回复相关
+const replyingTo = ref<DiaryComment | null>(null)
+const replyContent = ref('')
+const isSubmittingReply = ref(false)
+
+const totalCommentCount = computed(() => {
+  return comments.value.reduce((sum, c) => sum + 1 + (c.replies?.length ?? 0), 0)
+})
 
 const diaryId = computed(() => Number(route.params.id))
 
@@ -122,15 +131,60 @@ const submitComment = async () => {
   }
 }
 
-const deleteComment = async (commentId: number) => {
+const deleteComment = async (commentId: number, parentId?: number | null) => {
   if (!window.confirm('确定删除这条评论吗？')) return
   try {
     await api.delete(`/diaries/${diaryId.value}/comments/${commentId}/`)
-    comments.value = comments.value.filter(c => c.id !== commentId)
+    if (parentId) {
+      // 删除子回复：从父评论的 replies 中移除
+      const parent = comments.value.find(c => c.id === parentId)
+      if (parent?.replies) {
+        parent.replies = parent.replies.filter(r => r.id !== commentId)
+      }
+    } else {
+      // 删除顶级评论（级联删除由后端处理）
+      comments.value = comments.value.filter(c => c.id !== commentId)
+    }
     uiStore.showToast('评论已删除', 'success')
   } catch (error) {
     console.error('Delete comment error:', error)
     uiStore.showToast('删除评论失败', 'error')
+  }
+}
+
+const startReply = (comment: DiaryComment) => {
+  replyingTo.value = comment
+  replyContent.value = ''
+}
+
+const cancelReply = () => {
+  replyingTo.value = null
+  replyContent.value = ''
+}
+
+const submitReply = async () => {
+  if (!replyContent.value.trim() || !replyingTo.value) return
+  isSubmittingReply.value = true
+  try {
+    const response = await api.post(`/diaries/${diaryId.value}/comments/`, {
+      content: replyContent.value.trim(),
+      parent: replyingTo.value.id
+    })
+    const newReply = response.data.comment
+    // 后端强制一级嵌套，找到实际的顶级父评论
+    const topParentId = newReply.parent
+    const topParent = comments.value.find(c => c.id === topParentId)
+    if (topParent) {
+      if (!topParent.replies) topParent.replies = []
+      topParent.replies.push(newReply)
+    }
+    cancelReply()
+    uiStore.showToast('回复发表成功', 'success')
+  } catch (error) {
+    console.error('Submit reply error:', error)
+    uiStore.showToast('回复发表失败', 'error')
+  } finally {
+    isSubmittingReply.value = false
   }
 }
 
@@ -198,7 +252,7 @@ onUnmounted(() => {
         v-if="diary.attached_photos && diary.attached_photos.length > 0"
         class="photos-section"
       >
-        <h3 class="photos-title">关联图片（{{ diary.attached_photos.length }}）</h3>
+        <h3 class="photos-title">关联媒体（{{ diary.attached_photos.length }}）</h3>
         <div class="photos-grid">
           <button
             v-for="photo in diary.attached_photos"
@@ -206,19 +260,28 @@ onUnmounted(() => {
             class="photo-item"
             @click="openPreview(photo)"
           >
+            <video
+              v-if="isVideo(photo)"
+              :src="resolveMediaUrl(photo.url || '')"
+              class="photo-image"
+              muted
+              preload="metadata"
+            />
             <img
+              v-else
               :src="resolveMediaUrl(photo.url || photo.thumbnail_url || '')"
               :alt="photo.original_name"
               class="photo-image"
               loading="lazy"
             />
+            <span v-if="isVideo(photo)" class="video-badge">▶</span>
           </button>
         </div>
       </section>
 
       <!-- 评论区 -->
       <section class="comments-section">
-        <h3 class="comments-title">评论（{{ comments.length }}）</h3>
+        <h3 class="comments-title">评论（{{ totalCommentCount }}）</h3>
 
         <!-- 发表评论 -->
         <div v-if="userStore.isAuthenticated" class="comment-form">
@@ -250,14 +313,78 @@ onUnmounted(() => {
               <span class="comment-time">{{ dayjs(comment.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
             </div>
             <p class="comment-content">{{ comment.content }}</p>
-            <button
-              v-if="comment.created_by === userStore.user?.id"
-              class="comment-delete-btn"
-              @click="deleteComment(comment.id)"
-            >
-              <Trash2 :size="13" />
-              <span>删除</span>
-            </button>
+            <div class="comment-actions">
+              <button
+                v-if="userStore.isAuthenticated"
+                class="comment-reply-btn"
+                @click="startReply(comment)"
+              >
+                <Reply :size="13" />
+                <span>回复</span>
+              </button>
+              <button
+                v-if="comment.created_by === userStore.user?.id"
+                class="comment-delete-btn"
+                @click="deleteComment(comment.id)"
+              >
+                <Trash2 :size="13" />
+                <span>删除</span>
+              </button>
+            </div>
+
+            <!-- 内联回复表单 -->
+            <div v-if="replyingTo?.id === comment.id" class="reply-form">
+              <textarea
+                v-model="replyContent"
+                class="comment-input"
+                :placeholder="`回复 ${comment.created_by_details?.username || '匿名'}...`"
+                rows="2"
+                maxlength="1000"
+              ></textarea>
+              <div class="comment-form-actions">
+                <span class="char-count">{{ replyContent.length }}/1000</span>
+                <div class="reply-form-btns">
+                  <button class="btn-secondary btn-sm" @click="cancelReply">取消</button>
+                  <button
+                    class="btn-primary btn-sm"
+                    :disabled="!replyContent.trim() || isSubmittingReply"
+                    @click="submitReply"
+                  >
+                    <Send :size="14" />
+                    <span class="ml-2">{{ isSubmittingReply ? '发送中...' : '回复' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 子回复列表 -->
+            <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
+              <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                <div class="comment-header">
+                  <span class="comment-author">{{ reply.created_by_details?.username || '匿名' }}</span>
+                  <span class="comment-time">{{ dayjs(reply.created_at).format('YYYY-MM-DD HH:mm:ss') }}</span>
+                </div>
+                <p class="comment-content">{{ reply.content }}</p>
+                <div class="comment-actions">
+                  <button
+                    v-if="userStore.isAuthenticated"
+                    class="comment-reply-btn"
+                    @click="startReply(comment)"
+                  >
+                    <Reply :size="13" />
+                    <span>回复</span>
+                  </button>
+                  <button
+                    v-if="reply.created_by === userStore.user?.id"
+                    class="comment-delete-btn"
+                    @click="deleteComment(reply.id, comment.id)"
+                  >
+                    <Trash2 :size="13" />
+                    <span>删除</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <p v-else class="no-comments">暂无评论</p>
@@ -292,7 +419,15 @@ onUnmounted(() => {
           <ChevronLeft :size="28" />
         </button>
 
+        <video
+          v-if="isVideo(previewPhoto)"
+          :src="resolveMediaUrl(previewPhoto.url || '')"
+          class="preview-image"
+          controls
+          autoplay
+        />
         <img
+          v-else
           :src="resolveMediaUrl(previewPhoto.url || previewPhoto.thumbnail_url || '')"
           :alt="previewPhoto.original_name"
           class="preview-image"
@@ -435,6 +570,24 @@ onUnmounted(() => {
   cursor: zoom-in;
   overflow: hidden;
   background: #fff;
+  position: relative;
+}
+
+.video-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
 .photo-image {
@@ -659,6 +812,63 @@ onUnmounted(() => {
   color: #c45c7c;
   background: #fff2f6;
   border-color: #f2bfd1;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.comment-reply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  color: #af94a2;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  transition: color var(--dur-base), background-color var(--dur-base);
+}
+
+.comment-reply-btn:hover {
+  color: var(--pink-500);
+  background: #fff2f6;
+  border-color: #f2bfd1;
+}
+
+.replies-list {
+  margin-top: 0.65rem;
+  margin-left: 1.25rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reply-item {
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.reply-form {
+  margin-top: 0.5rem;
+  padding: 0.65rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.reply-form-btns {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .no-comments {

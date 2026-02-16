@@ -142,15 +142,28 @@ class DiaryTagSerializer(serializers.ModelSerializer):
         fields = ['id', 'tag']
 
 
-class DiaryCommentSerializer(serializers.ModelSerializer):
+class DiaryCommentReplySerializer(serializers.ModelSerializer):
     """
-    日记评论序列化器
+    子评论序列化器（不再嵌套）
     """
     created_by_details = UserBasicSerializer(source='created_by', read_only=True)
 
     class Meta:
         model = DiaryComment
-        fields = ['id', 'content', 'created_by', 'created_by_details', 'created_at']
+        fields = ['id', 'content', 'parent', 'created_by', 'created_by_details', 'created_at']
+        read_only_fields = ['id', 'created_by', 'created_at']
+
+
+class DiaryCommentSerializer(serializers.ModelSerializer):
+    """
+    日记评论序列化器（顶级评论，嵌套 replies）
+    """
+    created_by_details = UserBasicSerializer(source='created_by', read_only=True)
+    replies = DiaryCommentReplySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DiaryComment
+        fields = ['id', 'content', 'parent', 'created_by', 'created_by_details', 'created_at', 'replies']
         read_only_fields = ['id', 'created_by', 'created_at']
 
 
@@ -165,7 +178,7 @@ class DiarySerializer(serializers.ModelSerializer):
     # 关联数据
     attached_photos = PhotoSerializer(many=True, read_only=True)
     created_by_details = UserBasicSerializer(source='created_by', read_only=True)
-    comments = DiaryCommentSerializer(many=True, read_only=True)
+    comments = serializers.SerializerMethodField()
 
     class Meta:
         model = Diary
@@ -179,6 +192,12 @@ class DiarySerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_comments(self, obj):
+        top_level = obj.comments.filter(parent__isnull=True).select_related(
+            'created_by'
+        ).prefetch_related('replies', 'replies__created_by')
+        return DiaryCommentSerializer(top_level, many=True).data
 
 
 class DiaryListSerializer(serializers.ModelSerializer):
