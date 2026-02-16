@@ -286,7 +286,7 @@ class DiaryViewSet(viewsets.ModelViewSet):
             permission_classes=[permissions.IsAuthenticated])
     def delete_comment(self, request, pk=None, comment_id=None):
         """
-        删除评论（仅评论作者可删除）
+        删除评论（评论作者或管理员可删除）
         DELETE /api/diaries/{id}/comments/{comment_id}/
         """
         diary = self.get_object()
@@ -295,7 +295,8 @@ class DiaryViewSet(viewsets.ModelViewSet):
         except DiaryComment.DoesNotExist:
             return error_response('评论不存在', status.HTTP_404_NOT_FOUND)
 
-        if comment.created_by != request.user:
+        # 允许评论作者或管理员删除
+        if comment.created_by != request.user and not request.user.is_staff:
             return error_response('只能删除自己的评论', status.HTTP_403_FORBIDDEN)
 
         comment.delete()
