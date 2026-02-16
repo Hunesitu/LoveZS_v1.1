@@ -3,9 +3,9 @@ DiaryDetail 页面
 日记详情查看，支持图片放大预览
 -->
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Edit2, X, Trash2, Send } from 'lucide-vue-next'
+import { ArrowLeft, Edit2, X, Trash2, Send, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
@@ -21,7 +21,12 @@ const userStore = useUserStore()
 
 const diary = ref<Diary | null>(null)
 const isLoading = ref(false)
-const previewPhoto = ref<Photo | null>(null)
+const previewIndex = ref(-1)
+const previewPhoto = computed(() =>
+  previewIndex.value >= 0
+    ? diary.value?.attached_photos?.[previewIndex.value] ?? null
+    : null
+)
 
 // 评论相关
 const commentContent = ref('')
@@ -66,15 +71,35 @@ const getDiaryDetail = async () => {
 }
 
 const openPreview = (photo: Photo) => {
-  previewPhoto.value = photo
+  const idx = diary.value?.attached_photos?.findIndex(p => p.id === photo.id) ?? -1
+  previewIndex.value = idx
 }
 
 const closePreview = () => {
-  previewPhoto.value = null
+  previewIndex.value = -1
 }
 
 const stopBubbling = (event: MouseEvent) => {
   event.stopPropagation()
+}
+
+const photoCount = computed(() => diary.value?.attached_photos?.length ?? 0)
+
+const prevPhoto = () => {
+  if (previewIndex.value > 0) previewIndex.value--
+}
+const nextPhoto = () => {
+  if (previewIndex.value < photoCount.value - 1) previewIndex.value++
+}
+
+// 触摸滑动支持
+let touchStartX = 0
+const onTouchStart = (e: TouchEvent) => { touchStartX = e.touches[0].clientX }
+const onTouchEnd = (e: TouchEvent) => {
+  const delta = e.changedTouches[0].clientX - touchStartX
+  if (Math.abs(delta) > 50) {
+    delta > 0 ? prevPhoto() : nextPhoto()
+  }
 }
 
 const submitComment = async () => {
@@ -107,8 +132,20 @@ const deleteComment = async (commentId: number) => {
   }
 }
 
+// 键盘导航
+const onKeydown = (e: KeyboardEvent) => {
+  if (previewIndex.value < 0) return
+  if (e.key === 'ArrowLeft') prevPhoto()
+  else if (e.key === 'ArrowRight') nextPhoto()
+  else if (e.key === 'Escape') closePreview()
+}
+
 onMounted(() => {
   getDiaryDetail()
+  window.addEventListener('keydown', onKeydown)
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
 })
 </script>
 
@@ -235,16 +272,44 @@ onMounted(() => {
       role="dialog"
       aria-modal="true"
       @click="closePreview"
+      @touchstart.passive="onTouchStart"
+      @touchend="onTouchEnd"
     >
       <div class="preview-content" @click="stopBubbling">
         <button class="preview-close" @click="closePreview" aria-label="关闭预览">
           <X :size="18" />
         </button>
+
+        <!-- 左箭头 -->
+        <button
+          v-if="previewIndex > 0"
+          class="preview-nav preview-nav--prev"
+          @click="prevPhoto"
+          aria-label="上一张"
+        >
+          <ChevronLeft :size="28" />
+        </button>
+
         <img
           :src="resolveMediaUrl(previewPhoto.url || previewPhoto.thumbnail_url || '')"
           :alt="previewPhoto.original_name"
           class="preview-image"
         />
+
+        <!-- 右箭头 -->
+        <button
+          v-if="previewIndex < photoCount - 1"
+          class="preview-nav preview-nav--next"
+          @click="nextPhoto"
+          aria-label="下一张"
+        >
+          <ChevronRight :size="28" />
+        </button>
+
+        <!-- 计数器 -->
+        <span v-if="photoCount > 1" class="preview-counter">
+          {{ previewIndex + 1 }} / {{ photoCount }}
+        </span>
       </div>
     </div>
   </div>
@@ -421,6 +486,43 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
+}
+
+.preview-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.15s;
+}
+.preview-nav:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+.preview-nav--prev { left: 0.75rem; }
+.preview-nav--next { right: 0.75rem; }
+
+.preview-counter {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  pointer-events: none;
 }
 
 .loading-container,
