@@ -8,16 +8,20 @@ from rest_framework import permissions
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
-    共享查看 + 创建者编辑权限
+    共享查看 + 创建者/管理员编辑权限
 
     权限规则:
     - 安全方法 (GET, HEAD, OPTIONS): 所有人可访问
-    - 写方法 (POST, PUT, PATCH, DELETE): 仅创建者可操作
+    - 写方法 (POST, PUT, PATCH, DELETE): 创建者或管理员可操作
     """
 
     def has_object_permission(self, request, view, obj):
         # 读取权限允许任何请求
         if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # 管理员可操作任何对象
+        if request.user and request.user.is_staff:
             return True
 
         # 写权限仅限创建者
