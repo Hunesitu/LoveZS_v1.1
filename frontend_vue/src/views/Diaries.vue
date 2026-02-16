@@ -181,7 +181,16 @@ onMounted(() => {
         :to="`/diaries/${diary.id}`"
         class="diary-card"
       >
-        <!-- 鍗＄墖澶撮儴 -->
+        <!-- 封面图 -->
+        <div v-if="diary.attached_photos?.length" class="card-cover">
+          <img
+            :src="resolveMediaUrl(diary.attached_photos?.[0]?.url || diary.attached_photos?.[0]?.thumbnail_url || '')"
+            :alt="diary.attached_photos?.[0]?.original_name"
+            class="cover-image"
+          />
+        </div>
+
+        <!-- 卡片头部 -->
         <div class="card-header">
           <div class="header-left">
             <span class="mood-emoji">{{ getMoodEmoji(diary.mood) }}</span>
@@ -217,26 +226,7 @@ onMounted(() => {
 
         <!-- 鍐呭棰勮 -->
         <div class="card-content">
-          <p class="content-preview">{{ stripMarkdown(diary.content) }}...</p>
-        </div>
-
-        <!-- 鍏宠仈鐓х墖 -->
-        <div v-if="diary.attached_photos && diary.attached_photos.length > 0" class="card-photos">
-          <div class="photos-list">
-            <img
-              v-for="photo in diary.attached_photos.slice(0, 3)"
-              :key="photo.id"
-              :src="resolveMediaUrl(photo.url || photo.thumbnail_url || '')"
-              :alt="photo.original_name"
-              class="photo-thumbnail"
-            />
-            <div
-              v-if="diary.attached_photos.length > 3"
-              class="more-photos"
-            >
-              +{{ diary.attached_photos.length - 3 }}
-            </div>
-          </div>
+          <p class="content-preview">{{ stripMarkdown(diary.content) }}</p>
         </div>
 
         <!-- 分类 -->
@@ -244,12 +234,6 @@ onMounted(() => {
           <div class="tags-group">
             <span class="category-badge">{{ diary.category }}</span>
           </div>
-          <span
-            v-if="diary.attached_photos && diary.attached_photos.length > 0"
-            class="photo-count"
-          >
-            馃摲 {{ diary.attached_photos.length }}
-          </span>
         </div>
       </RouterLink>
     </div>
@@ -419,7 +403,8 @@ onMounted(() => {
   background: var(--bg-elevated);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-  padding: 1rem;
+  padding: 0;
+  overflow: hidden;
   box-shadow: var(--shadow-soft);
   transition: transform var(--dur-fast), border-color var(--dur-base), box-shadow var(--dur-base);
 }
@@ -430,11 +415,24 @@ onMounted(() => {
   box-shadow: var(--shadow-hover);
 }
 
+.card-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .card-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 0.75rem;
+  padding: 1rem 1rem 0;
 }
 
 .header-left {
@@ -519,6 +517,7 @@ onMounted(() => {
 
 .card-content {
   margin-bottom: 0.75rem;
+  padding: 0 1rem;
 }
 
 .content-preview {
@@ -532,41 +531,11 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.card-photos {
-  margin-bottom: 0.75rem;
-}
-
-.photos-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.photo-thumbnail {
-  width: 4rem;
-  height: 4rem;
-  object-fit: cover;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border-soft);
-}
-
-.more-photos {
-  width: 4rem;
-  height: 4rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  background-color: #fff7fa;
-}
-
 .card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 1rem 1rem;
 }
 
 .tags-group {
@@ -585,13 +554,6 @@ onMounted(() => {
   font-weight: 600;
   background: #ffeaf3;
   color: #a55674;
-}
-
-.photo-count {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
 }
 
 .empty-state-card {
@@ -642,12 +604,6 @@ onMounted(() => {
 
   .diaries-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .diaries-grid {
-    grid-template-columns: repeat(3, 1fr);
   }
 }
 
