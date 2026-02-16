@@ -240,6 +240,8 @@ class Diary(models.Model):
     )
     content = models.TextField(
         max_length=10000,
+        blank=True,
+        default='',
         verbose_name='内容',
         help_text='日记内容最多10000个字符，支持Markdown'
     )

@@ -225,7 +225,8 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
             'date', 'is_public', 'photo_ids', 'created_by'
         ]
         extra_kwargs = {
-            'created_by': {'required': False}
+            'created_by': {'required': False},
+            'content': {'required': False, 'allow_blank': True},
         }
 
     def create(self, validated_data):
