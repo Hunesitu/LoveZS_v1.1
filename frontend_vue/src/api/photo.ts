@@ -40,6 +40,7 @@ export const uploadPhotos = async (
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 300000, // 5分钟，视频文件较大
     }
   )
   return response.data

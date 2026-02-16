@@ -147,8 +147,8 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media" / "uploads"
 
 # 文件上传限制
-FILE_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=10485760, cast=int)  # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=10485760, cast=int)
+FILE_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=104857600, cast=int)  # 100MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=104857600, cast=int)
 
 # ========================================
 # Django REST Framework 配置
