@@ -10,8 +10,8 @@ import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
 import { Plus, Search, Trash2, Edit } from 'lucide-vue-next'
 import dayjs from 'dayjs'
-import type { Diary } from '@/types'
-import { resolveMediaUrl } from '@/utils/media'
+import type { Diary, Photo } from '@/types'
+import { resolveMediaUrl, isVideo } from '@/utils/media'
 
 const uiStore = useUiStore()
 const userStore = useUserStore()
@@ -32,6 +32,9 @@ const moodOptions = [
   { value: 'loved', label: '相爱 😍' },
   { value: 'grateful', label: '感恩 🙏' },
 ]
+
+const getFirstImage = (photos: Photo[]) =>
+  photos.find(p => !isVideo(p)) || photos[0] || null
 
 const filteredDiaries = computed(() => {
   let filtered = diaries.value
@@ -183,11 +186,22 @@ onMounted(() => {
       >
         <!-- 封面图 -->
         <div v-if="diary.attached_photos?.length" class="card-cover">
-          <img
-            :src="resolveMediaUrl(diary.attached_photos?.[0]?.url || diary.attached_photos?.[0]?.thumbnail_url || '')"
-            :alt="diary.attached_photos?.[0]?.original_name"
-            class="cover-image"
-          />
+          <template v-if="getFirstImage(diary.attached_photos)">
+            <video
+              v-if="isVideo(getFirstImage(diary.attached_photos)!)"
+              :src="resolveMediaUrl(getFirstImage(diary.attached_photos)!.url || '')"
+              class="cover-image"
+              muted
+              preload="metadata"
+            />
+            <img
+              v-else
+              :src="resolveMediaUrl(getFirstImage(diary.attached_photos)!.url || getFirstImage(diary.attached_photos)!.thumbnail_url || '')"
+              :alt="getFirstImage(diary.attached_photos)!.original_name"
+              class="cover-image"
+            />
+          </template>
+          <span v-if="getFirstImage(diary.attached_photos) && isVideo(getFirstImage(diary.attached_photos)!)" class="video-badge">▶</span>
         </div>
 
         <!-- 卡片头部 -->
@@ -419,12 +433,30 @@ onMounted(() => {
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
+  position: relative;
 }
 
 .cover-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.video-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
 .card-header {

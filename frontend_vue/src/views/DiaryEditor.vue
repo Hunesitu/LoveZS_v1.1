@@ -13,7 +13,7 @@ import dayjs from 'dayjs'
 import type { Mood, CreateDiaryRequest, Photo } from '@/types'
 import photoService from '@/api/photo'
 import diaryService from '@/api/diary'
-import { resolveMediaUrl } from '@/utils/media'
+import { resolveMediaUrl, isVideo } from '@/utils/media'
 
 const router = useRouter()
 const route = useRoute()
@@ -109,10 +109,10 @@ const uploadImageFiles = async (files: File[]) => {
     newPhotos.forEach((photo) => ids.add(photo.id))
     formData.value.photo_ids = Array.from(ids)
 
-    uiStore.showToast(`已上传 ${newPhotos.length} 张图片`, 'success')
+    uiStore.showToast(`已上传 ${newPhotos.length} 个文件`, 'success')
   } catch (error) {
     console.error('Upload image error:', error)
-    uiStore.showToast('图片上传失败，请稍后重试', 'error')
+    uiStore.showToast('文件上传失败，请稍后重试', 'error')
   } finally {
     isUploading.value = false
   }
@@ -127,28 +127,26 @@ const handleSelectPhotos = async (event: Event) => {
   target.value = ''
 }
 
-// 处理剪贴板粘贴图片
+// 处理剪贴板粘贴图片/视频
 const handlePaste = async (event: ClipboardEvent) => {
   const items = event.clipboardData?.items
   if (!items) return
 
-  const imageFiles: File[] = []
+  const mediaFiles: File[] = []
 
-  // 遍历剪贴板项，提取图片
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
-    if (item?.type.startsWith('image/')) {
+    if (item?.type.startsWith('image/') || item?.type.startsWith('video/')) {
       const file = item?.getAsFile()
       if (file) {
-        imageFiles.push(file)
+        mediaFiles.push(file)
       }
     }
   }
 
-  // 如果有图片，阻止默认行为并上传
-  if (imageFiles.length > 0) {
+  if (mediaFiles.length > 0) {
     event.preventDefault()
-    await uploadImageFiles(imageFiles)
+    await uploadImageFiles(mediaFiles)
   }
 }
 
@@ -292,24 +290,32 @@ onMounted(() => {
       </div>
 
       <div class="form-group">
-        <label class="form-label">添加图片</label>
+        <label class="form-label">添加图片或视频</label>
         <div class="upload-card">
           <input
             id="diary-photo-input"
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             multiple
             class="photo-input"
             @change="handleSelectPhotos"
           />
           <label for="diary-photo-input" class="btn-upload" :class="{ disabled: isUploading }">
-            {{ isUploading ? '上传中...' : '选择图片并上传' }}
+            {{ isUploading ? '上传中...' : '选择图片或视频并上传' }}
           </label>
         </div>
 
         <div v-if="uploadedPhotos.length > 0" class="attached-list">
           <div v-for="photo in uploadedPhotos" :key="photo.id" class="attached-item">
+            <video
+              v-if="isVideo(photo)"
+              :src="resolveMediaUrl(photo.url || '')"
+              class="attached-image"
+              muted
+              preload="metadata"
+            />
             <img
+              v-else
               :src="resolveMediaUrl(photo.url || photo.thumbnail_url || '')"
               :alt="photo.original_name"
               class="attached-image"
