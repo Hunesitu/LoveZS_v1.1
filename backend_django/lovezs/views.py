@@ -87,7 +87,8 @@ class DiaryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """公开日记所有人可见，私密日记仅作者可见"""
         qs = Diary.objects.prefetch_related(
-            'attached_photos', 'comments', 'comments__created_by'
+            'attached_photos', 'comments', 'comments__created_by',
+            'comments__replies', 'comments__replies__created_by'
         ).select_related('created_by')
         if self.request.user.is_authenticated:
             return qs.filter(Q(is_public=True) | Q(created_by=self.request.user))
@@ -253,14 +254,29 @@ class DiaryViewSet(viewsets.ModelViewSet):
         diary = self.get_object()
 
         if request.method == 'GET':
-            comments_qs = diary.comments.select_related('created_by').all()
+            comments_qs = diary.comments.filter(
+                parent__isnull=True
+            ).select_related('created_by').prefetch_related(
+                'replies', 'replies__created_by'
+            )
             serializer = DiaryCommentSerializer(comments_qs, many=True)
             return success_response({'comments': serializer.data})
 
         # POST
+        parent_comment = None
+        parent_id = request.data.get('parent')
+        if parent_id is not None:
+            try:
+                parent_comment = DiaryComment.objects.get(id=parent_id, diary=diary)
+                # 强制一级嵌套：回复的是子评论则归属其顶级父评论
+                if parent_comment.parent is not None:
+                    parent_comment = parent_comment.parent
+            except DiaryComment.DoesNotExist:
+                return error_response('父评论不存在', status.HTTP_404_NOT_FOUND)
+
         serializer = DiaryCommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(diary=diary, created_by=request.user)
+        serializer.save(diary=diary, created_by=request.user, parent=parent_comment)
         return success_response(
             {'comment': serializer.data},
             message='评论发表成功'
@@ -361,10 +377,19 @@ class PhotoViewSet(viewsets.ModelViewSet):
             defaults={'name': '默认相册'}
         )
 
+        ALLOWED_TYPES = ('image/', 'video/')
         photos = []
         for uploaded_file in uploaded_files:
-            if not uploaded_file.content_type or not uploaded_file.content_type.startswith('image/'):
-                return error_response('仅支持图片文件上传', status.HTTP_400_BAD_REQUEST)
+            if not uploaded_file.content_type or not any(
+                uploaded_file.content_type.startswith(t) for t in ALLOWED_TYPES
+            ):
+                return error_response('仅支持图片或视频文件上传', status.HTTP_400_BAD_REQUEST)
+
+            is_image = uploaded_file.content_type.startswith('image/')
+            max_size = 10 * 1024 * 1024 if is_image else 100 * 1024 * 1024
+            if uploaded_file.size > max_size:
+                limit = '10MB' if is_image else '100MB'
+                return error_response(f'文件大小不能超过 {limit}', status.HTTP_400_BAD_REQUEST)
 
             ext = os.path.splitext(uploaded_file.name)[1].lower()
             filename = f"{uuid.uuid4().hex}{ext}"
@@ -376,13 +401,14 @@ class PhotoViewSet(viewsets.ModelViewSet):
                 for chunk in uploaded_file.chunks():
                     target_file.write(chunk)
 
-            thumbnails_dir = os.path.join(settings.MEDIA_ROOT, 'thumbnails')
-            os.makedirs(thumbnails_dir, exist_ok=True)
-            thumbnail_path = os.path.join(thumbnails_dir, filename)
+            if is_image:
+                thumbnails_dir = os.path.join(settings.MEDIA_ROOT, 'thumbnails')
+                os.makedirs(thumbnails_dir, exist_ok=True)
+                thumbnail_path = os.path.join(thumbnails_dir, filename)
 
-            with Image.open(original_path) as image:
-                image.thumbnail((400, 400))
-                image.save(thumbnail_path)
+                with Image.open(original_path) as image:
+                    image.thumbnail((400, 400))
+                    image.save(thumbnail_path)
 
             photo_data = {
                 'filename': filename,
@@ -399,10 +425,17 @@ class PhotoViewSet(viewsets.ModelViewSet):
             photo = serializer.save()
             photos.append(photo)
 
+        image_count = sum(1 for p in photos if p.mimetype and p.mimetype.startswith('image/'))
+        video_count = len(photos) - image_count
+        parts = []
+        if image_count:
+            parts.append(f'{image_count} 张图片')
+        if video_count:
+            parts.append(f'{video_count} 个视频')
         result_serializer = PhotoSerializer(photos, many=True)
         return success_response(
             {'photos': result_serializer.data},
-            message=f'成功上传 {len(photos)} 张照片'
+            message=f'成功上传 {"、".join(parts)}'
         )
 
 

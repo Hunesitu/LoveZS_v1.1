@@ -172,9 +172,11 @@ export interface Photo {
 export interface DiaryComment {
   id: number
   content: string
+  parent: number | null
   created_by: number
   created_by_details?: UserBasic
   created_at: string
+  replies?: DiaryComment[]
 }
 
 /**
