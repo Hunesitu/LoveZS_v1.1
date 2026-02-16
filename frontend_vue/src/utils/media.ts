@@ -25,6 +25,9 @@ const normalizeMediaPath = (value: string) => {
   return withLeadingSlash
 }
 
+export const isVideo = (media: { mimetype?: string }) =>
+  media.mimetype?.startsWith('video/') ?? false
+
 export const resolveMediaUrl = (url?: string) => {
   if (!url) {
     return ''
