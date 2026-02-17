@@ -207,7 +207,7 @@ class DiaryListSerializer(serializers.ModelSerializer):
     formatted_date = serializers.ReadOnlyField()
     word_count = serializers.ReadOnlyField()
     photo_count = serializers.SerializerMethodField()
-    attached_photos = PhotoSerializer(many=True, read_only=True)
+    attached_photos = PhotoListSerializer(many=True, read_only=True)
     created_by_details = UserBasicSerializer(source='created_by', read_only=True)
 
     class Meta:
