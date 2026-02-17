@@ -219,7 +219,7 @@ onMounted(() => {
               </p>
             </div>
           </div>
-          <div class="header-actions" v-if="diary.created_by === userStore.user?.id">
+          <div class="header-actions" v-if="diary.created_by === userStore.user?.id || userStore.isAdmin">
             <RouterLink
               :to="`/diaries/${diary.id}/edit`"
               class="action-btn edit-btn"
