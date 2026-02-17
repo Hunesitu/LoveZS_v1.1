@@ -55,6 +55,19 @@ async function attemptRefreshToken() {
   // 更新 store 中的 token
   if (response.data?.data?.token) {
     userStore.updateToken(response.data.data.token)
+
+    // 刷新 token 后同时更新用户信息（确保 is_staff 等最新）
+    try {
+      const profileResponse = await axios.get(`${API_BASE_URL}/auth/profile/`, {
+        headers: { Authorization: `Bearer ${response.data.data.token.access}` }
+      })
+      if (profileResponse.data?.data?.user) {
+        userStore.updateUser(profileResponse.data.data.user)
+      }
+    } catch (profileError) {
+      console.warn('Failed to refresh user info:', profileError)
+    }
+
     return response.data.data.token.access
   }
 
