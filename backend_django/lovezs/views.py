@@ -85,12 +85,16 @@ class DiaryViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        """公开日记所有人可见，私密日记仅作者可见"""
+        """公开日记所有人可见，私密日记仅作者可见，管理员可见所有"""
         qs = Diary.objects.prefetch_related(
             'attached_photos', 'comments', 'comments__created_by',
             'comments__replies', 'comments__replies__created_by'
         ).select_related('created_by')
+
         if self.request.user.is_authenticated:
+            # 管理员可见所有日记
+            if self.request.user.is_staff:
+                return qs
             return qs.filter(Q(is_public=True) | Q(created_by=self.request.user))
         return qs.filter(is_public=True)
 
