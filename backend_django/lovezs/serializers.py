@@ -100,7 +100,7 @@ class PhotoListSerializer(serializers.ModelSerializer):
         model = Photo
         fields = [
             'id', 'filename', 'original_name', 'url',
-            'size_formatted', 'thumbnail_url',
+            'size_formatted', 'mimetype', 'thumbnail_url',
             'album', 'description', 'created_at'
         ]
 
