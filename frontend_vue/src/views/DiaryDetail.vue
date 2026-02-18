@@ -5,7 +5,7 @@ DiaryDetail 页面
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Edit2, X, Trash2, Send, ChevronLeft, ChevronRight, Reply, Pin } from 'lucide-vue-next'
+import { ArrowLeft, Edit2, X, Trash2, Send, ChevronLeft, ChevronRight, Reply, Pin, ZoomIn, ZoomOut, RotateCcw } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
@@ -27,6 +27,88 @@ const previewPhoto = computed(() =>
     ? diary.value?.attached_photos?.[previewIndex.value] ?? null
     : null
 )
+
+// 缩放相关
+const scale = ref(1)
+const minScale = 0.5
+const maxScale = 3
+
+const zoomIn = () => {
+  scale.value = Math.min(scale.value + 0.25, maxScale)
+}
+
+const zoomOut = () => {
+  scale.value = Math.max(scale.value - 0.25, minScale)
+}
+
+const resetZoom = () => {
+  scale.value = 1
+}
+
+const handleWheel = (e: WheelEvent) => {
+  e.preventDefault()
+  if (e.deltaY < 0) {
+    zoomIn()
+  } else {
+    zoomOut()
+  }
+}
+
+// 拖动切换相关
+const isDragging = ref(false)
+const dragStartX = ref(0)
+const dragStartY = ref(0)
+const dragDeltaX = ref(0)
+const dragDeltaY = ref(0)
+
+const onDragStart = (e: MouseEvent | TouchEvent) => {
+  isDragging.value = true
+  if ('touches' in e) {
+    dragStartX.value = e.touches[0].clientX
+    dragStartY.value = e.touches[0].clientY
+  } else {
+    dragStartX.value = e.clientX
+    dragStartY.value = e.clientY
+  }
+  dragDeltaX.value = 0
+  dragDeltaY.value = 0
+}
+
+const onDragMove = (e: MouseEvent | TouchEvent) => {
+  if (!isDragging.value) return
+
+  let clientX: number, clientY: number
+  if ('touches' in e) {
+    clientX = e.touches[0].clientX
+    clientY = e.touches[0].clientY
+  } else {
+    clientX = e.clientX
+    clientY = e.clientY
+  }
+
+  dragDeltaX.value = clientX - dragStartX.value
+  dragDeltaY.value = clientY - dragStartY.value
+}
+
+const onDragEnd = () => {
+  if (!isDragging.value) return
+  isDragging.value = false
+
+  const threshold = 50 // 拖动阈值
+
+  if (dragDeltaX.value < -threshold && previewIndex.value < photoCount.value - 1) {
+    // 向左滑动，切换下一张
+    previewIndex.value++
+    resetZoom()
+  } else if (dragDeltaX.value > threshold && previewIndex.value > 0) {
+    // 向右滑动，切换上一张
+    previewIndex.value--
+    resetZoom()
+  }
+
+  dragDeltaX.value = 0
+  dragDeltaY.value = 0
+}
 
 // 评论相关
 const commentContent = ref('')
@@ -433,41 +515,74 @@ onUnmounted(() => {
       @click="closePreview"
       @touchstart.passive="onTouchStart"
       @touchend="onTouchEnd"
+      @wheel="handleWheel"
     >
-      <div class="preview-content" @click="stopBubbling">
+      <div
+        class="preview-content"
+        @click="stopBubbling"
+        @mousedown="onDragStart"
+        @mousemove="onDragMove"
+        @mouseup="onDragEnd"
+        @mouseleave="onDragEnd"
+        @touchstart.passive="onDragStart"
+        @touchmove.passive="onDragMove"
+        @touchend="onDragEnd"
+      >
         <button class="preview-close" @click="closePreview" aria-label="关闭预览">
           <X :size="18" />
         </button>
+
+        <!-- 缩放按钮 -->
+        <div class="zoom-controls">
+          <button class="zoom-btn" @click.stop="zoomOut" :disabled="scale <= minScale" aria-label="缩小">
+            <ZoomOut :size="18" />
+          </button>
+          <span class="zoom-level">{{ Math.round(scale * 100) }}%</span>
+          <button class="zoom-btn" @click.stop="zoomIn" :disabled="scale >= maxScale" aria-label="放大">
+            <ZoomIn :size="18" />
+          </button>
+          <button class="zoom-btn" @click.stop="resetZoom" aria-label="重置">
+            <RotateCcw :size="18" />
+          </button>
+        </div>
 
         <!-- 左箭头 -->
         <button
           v-if="previewIndex > 0"
           class="preview-nav preview-nav--prev"
-          @click="prevPhoto"
+          @click.stop="prevPhoto(); resetZoom()"
           aria-label="上一张"
         >
           <ChevronLeft :size="28" />
         </button>
 
-        <video
-          v-if="isVideo(previewPhoto)"
-          :src="resolveMediaUrl(previewPhoto.url || '')"
-          class="preview-image"
-          controls
-          autoplay
-        />
-        <img
-          v-else
-          :src="resolveMediaUrl(previewPhoto.url || previewPhoto.thumbnail_url || '')"
-          :alt="previewPhoto.original_name"
-          class="preview-image"
-        />
+        <div
+          class="preview-image-wrapper"
+          :style="{
+            transform: `translateX(${dragDeltaX}px) scale(${scale})`,
+            transition: isDragging ? 'none' : 'transform 0.3s ease'
+          }"
+        >
+          <video
+            v-if="isVideo(previewPhoto)"
+            :src="resolveMediaUrl(previewPhoto.url || '')"
+            class="preview-image"
+            controls
+            autoplay
+          />
+          <img
+            v-else
+            :src="resolveMediaUrl(previewPhoto.url || previewPhoto.thumbnail_url || '')"
+            :alt="previewPhoto.original_name"
+            class="preview-image"
+          />
+        </div>
 
         <!-- 右箭头 -->
         <button
           v-if="previewIndex < photoCount - 1"
           class="preview-nav preview-nav--next"
-          @click="nextPhoto"
+          @click.stop="nextPhoto(); resetZoom()"
           aria-label="下一张"
         >
           <ChevronRight :size="28" />
@@ -666,6 +781,62 @@ onUnmounted(() => {
   height: auto;
   object-fit: contain;
   border-radius: var(--radius-md);
+}
+
+.preview-image-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: calc(100vh - 1rem);
+}
+
+.preview-image-wrapper .preview-image {
+  max-height: calc(100vh - 1rem);
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  z-index: 10;
+}
+
+.zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: transparent;
+  border: none;
+  color: #fff;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-level {
+  color: #fff;
+  font-size: 0.75rem;
+  min-width: 2.5rem;
+  text-align: center;
 }
 
 .preview-close {
