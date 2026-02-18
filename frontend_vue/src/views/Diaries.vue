@@ -8,14 +8,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
-import { Plus, Search, Trash2, Edit } from 'lucide-vue-next'
+import { Plus, Search, Trash2, Edit, Pin } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import type { Diary, Photo } from '@/types'
 import { resolveMediaUrl, isVideo } from '@/utils/media'
+import { pinDiary, unpinDiary } from '@/api/diary'
 
 const uiStore = useUiStore()
 const userStore = useUserStore()
-const { diaries, isLoading, loadDiaries, deleteDiary } = useDiaries()
+const { diaries, isLoading, loadDiaries, deleteDiary, updateDiary } = useDiaries()
 
 const searchTerm = ref('')
 const selectedCategory = ref('')
@@ -89,6 +90,26 @@ const handleDeleteDiary = async (id: number) => {
   } catch (error) {
     console.error('Failed to delete diary:', error)
     uiStore.showToast('删除失败，请稍后重试', 'error')
+  }
+}
+
+const handleTogglePin = async (diary: Diary, event: Event) => {
+  event.preventDefault()
+  event.stopPropagation()
+
+  try {
+    if (diary.is_pinned) {
+      await unpinDiary(diary.id)
+      diary.is_pinned = false
+      uiStore.showToast('已取消置顶', 'success')
+    } else {
+      await pinDiary(diary.id)
+      diary.is_pinned = true
+      uiStore.showToast('日记已置顶', 'success')
+    }
+  } catch (error) {
+    console.error('Failed to toggle pin:', error)
+    uiStore.showToast('操作失败，请稍后重试', 'error')
   }
 }
 
@@ -211,6 +232,7 @@ onMounted(() => {
             <div class="diary-meta">
               <h3 class="diary-title">
                 <span v-if="diary.is_public === false" class="private-badge">🔒</span>
+                <span v-if="diary.is_pinned" class="pinned-badge" title="已置顶">📌</span>
                 {{ diary.title }}
               </h3>
               <p class="diary-date">
@@ -220,6 +242,13 @@ onMounted(() => {
             </div>
           </div>
           <div class="header-actions" v-if="diary.created_by === userStore.user?.id || userStore.isAdmin">
+            <button
+              @click="(event) => { handleTogglePin(diary, event) }"
+              class="action-btn pin-btn"
+              :title="diary.is_pinned ? '取消置顶' : '置顶'"
+            >
+              <Pin :size="16" :class="{ 'pinned': diary.is_pinned }" />
+            </button>
             <RouterLink
               :to="`/diaries/${diary.id}/edit`"
               class="action-btn edit-btn"
@@ -501,6 +530,12 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.pinned-badge {
+  font-size: 0.85em;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
 .diary-date {
   margin: 0.15rem 0 0;
   font-size: 0.8125rem;
@@ -533,6 +568,17 @@ onMounted(() => {
 
 .action-btn:hover {
   transform: translateY(-1px);
+}
+
+.pin-btn:hover {
+  color: var(--pink-500);
+  background: var(--pink-50);
+  border-color: var(--border-soft);
+}
+
+.pin-btn .pinned {
+  color: var(--pink-500);
+  transform: rotate(45deg);
 }
 
 .edit-btn:hover {
