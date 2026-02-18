@@ -184,7 +184,7 @@ class DiarySerializer(serializers.ModelSerializer):
         model = Diary
         fields = [
             'id', 'title', 'content', 'mood', 'category',
-            'date', 'formatted_date', 'is_public',
+            'date', 'formatted_date', 'is_public', 'is_pinned',
             'attached_photos',
             'word_count',
             'created_by', 'created_by_details',
@@ -214,7 +214,7 @@ class DiaryListSerializer(serializers.ModelSerializer):
         model = Diary
         fields = [
             'id', 'title', 'content', 'mood', 'category',
-            'date', 'formatted_date', 'is_public',
+            'date', 'formatted_date', 'is_public', 'is_pinned',
             'attached_photos',
             'word_count', 'photo_count',
             'created_by', 'created_by_details',

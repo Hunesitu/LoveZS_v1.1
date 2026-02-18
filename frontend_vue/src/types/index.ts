@@ -191,6 +191,7 @@ export interface Diary {
   date: string
   formatted_date?: string
   is_public?: boolean
+  is_pinned?: boolean
   attached_photos?: Photo[]
   word_count?: number
   comments?: DiaryComment[]
