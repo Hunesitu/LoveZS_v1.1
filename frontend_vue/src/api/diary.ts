@@ -93,6 +93,22 @@ export const getCategories = async (): Promise<{ categories: string[] }> => {
   return response.data
 }
 
+/**
+ * 置顶日记
+ */
+export const pinDiary = async (id: number): Promise<{ diary: Diary }> => {
+  const response = await api.post<{ diary: Diary }>(`/diaries/${id}/pin/`)
+  return response.data
+}
+
+/**
+ * 取消置顶日记
+ */
+export const unpinDiary = async (id: number): Promise<{ diary: Diary }> => {
+  const response = await api.post<{ diary: Diary }>(`/diaries/${id}/unpin/`)
+  return response.data
+}
+
 // 默认导出
 const diaryService = {
   getDiaries,
@@ -103,6 +119,8 @@ const diaryService = {
   attachPhotos,
   removePhoto,
   getCategories,
+  pinDiary,
+  unpinDiary,
 }
 
 export default diaryService

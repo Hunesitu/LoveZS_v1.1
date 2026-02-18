@@ -262,6 +262,7 @@ class Diary(models.Model):
         db_index=True
     )
     is_public = models.BooleanField(default=True, verbose_name='是否公开')
+    is_pinned = models.BooleanField(default=False, verbose_name='是否置顶')
 
     def save(self, *args, **kwargs):
         # 确保 date 字段是 date 类型而不是 datetime
@@ -296,8 +297,9 @@ class Diary(models.Model):
             models.Index(fields=['-date']),
             models.Index(fields=['category']),
             models.Index(fields=['mood']),
+            models.Index(fields=['-is_pinned', '-created_at']),
         ]
-        ordering = ['-created_at']
+        ordering = ['-is_pinned', '-created_at']
 
     def __str__(self):
         return self.title

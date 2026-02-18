@@ -82,8 +82,8 @@ class DiaryViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'mood', 'date']
     search_fields = ['title', 'content']
-    ordering_fields = ['date', 'created_at']
-    ordering = ['-created_at']
+    ordering_fields = ['date', 'created_at', 'is_pinned']
+    ordering = ['-is_pinned', '-created_at']
 
     def get_queryset(self):
         """公开日记所有人可见，私密日记仅作者可见，管理员可见所有"""
@@ -339,6 +339,46 @@ class DiaryViewSet(viewsets.ModelViewSet):
 
         comment.delete()
         return success_response(message='评论删除成功')
+
+    # ========================================
+    # 置顶操作
+    # ========================================
+
+    @action(detail=True, methods=['post'], url_path='pin')
+    def pin_diary(self, request, pk=None):
+        """
+        置顶日记
+        POST /api/diaries/{id}/pin/
+        """
+        diary = self.get_object()
+
+        # 权限检查：日记作者或管理员可以置顶
+        if diary.created_by != request.user and not request.user.is_staff:
+            return error_response('只能置顶自己的日记', status.HTTP_403_FORBIDDEN)
+
+        diary.is_pinned = True
+        diary.save(update_fields=['is_pinned'])
+
+        serializer = DiarySerializer(diary)
+        return success_response({'diary': serializer.data}, message='日记置顶成功')
+
+    @action(detail=True, methods=['post'], url_path='unpin')
+    def unpin_diary(self, request, pk=None):
+        """
+        取消置顶日记
+        POST /api/diaries/{id}/unpin/
+        """
+        diary = self.get_object()
+
+        # 权限检查：日记作者或管理员可以取消置顶
+        if diary.created_by != request.user and not request.user.is_staff:
+            return error_response('只能取消置顶自己的日记', status.HTTP_403_FORBIDDEN)
+
+        diary.is_pinned = False
+        diary.save(update_fields=['is_pinned'])
+
+        serializer = DiarySerializer(diary)
+        return success_response({'diary': serializer.data}, message='日记取消置顶成功')
 
 
 # ========================================
