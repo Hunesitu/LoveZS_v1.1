@@ -64,8 +64,11 @@ const dragDeltaY = ref(0)
 const onDragStart = (e: MouseEvent | TouchEvent) => {
   isDragging.value = true
   if ('touches' in e) {
-    dragStartX.value = e.touches[0].clientX
-    dragStartY.value = e.touches[0].clientY
+    const touch = e.touches[0]
+    if (touch) {
+      dragStartX.value = touch.clientX
+      dragStartY.value = touch.clientY
+    }
   } else {
     dragStartX.value = e.clientX
     dragStartY.value = e.clientY
@@ -79,8 +82,10 @@ const onDragMove = (e: MouseEvent | TouchEvent) => {
 
   let clientX: number, clientY: number
   if ('touches' in e) {
-    clientX = e.touches[0].clientX
-    clientY = e.touches[0].clientY
+    const touch = e.touches[0]
+    if (!touch) return
+    clientX = touch.clientX
+    clientY = touch.clientY
   } else {
     clientX = e.clientX
     clientY = e.clientY
