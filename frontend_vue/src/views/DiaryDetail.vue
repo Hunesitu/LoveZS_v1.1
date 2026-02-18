@@ -5,12 +5,12 @@ DiaryDetail 页面
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Edit2, X, Trash2, Send, ChevronLeft, ChevronRight, Reply } from 'lucide-vue-next'
+import { ArrowLeft, Edit2, X, Trash2, Send, ChevronLeft, ChevronRight, Reply, Pin } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
 import { resolveMediaUrl, isVideo } from '@/utils/media'
-import diaryService from '@/api/diary'
+import diaryService, { pinDiary, unpinDiary } from '@/api/diary'
 import { api } from '@/api/client'
 import type { Diary, Photo, DiaryComment } from '@/types'
 
@@ -76,6 +76,25 @@ const getDiaryDetail = async () => {
     router.push('/diaries')
   } finally {
     isLoading.value = false
+  }
+}
+
+const handleTogglePin = async () => {
+  if (!diary.value) return
+
+  try {
+    if (diary.value.is_pinned) {
+      await unpinDiary(diary.value.id)
+      diary.value.is_pinned = false
+      uiStore.showToast('已取消置顶', 'success')
+    } else {
+      await pinDiary(diary.value.id)
+      diary.value.is_pinned = true
+      uiStore.showToast('日记已置顶', 'success')
+    }
+  } catch (error) {
+    console.error('Failed to toggle pin:', error)
+    uiStore.showToast('操作失败，请稍后重试', 'error')
   }
 }
 
@@ -212,14 +231,24 @@ onUnmounted(() => {
         <ArrowLeft :size="16" />
         <span class="ml-2">返回列表</span>
       </button>
-      <button
-        v-if="diary && diary.created_by === userStore.user?.id"
-        class="btn-primary"
-        @click="router.push(`/diaries/${diary.id}/edit`)"
-      >
-        <Edit2 :size="16" />
-        <span class="ml-2">编辑</span>
-      </button>
+      <div class="header-actions">
+        <button
+          v-if="diary && (diary.created_by === userStore.user?.id || userStore.isAdmin)"
+          class="btn-secondary"
+          @click="handleTogglePin"
+        >
+          <Pin :size="16" :class="{ 'pinned-icon': diary?.is_pinned }" />
+          <span class="ml-2">{{ diary?.is_pinned ? '取消置顶' : '置顶' }}</span>
+        </button>
+        <button
+          v-if="diary && diary.created_by === userStore.user?.id"
+          class="btn-primary"
+          @click="router.push(`/diaries/${diary.id}/edit`)"
+        >
+          <Edit2 :size="16" />
+          <span class="ml-2">编辑</span>
+        </button>
+      </div>
     </div>
 
     <div v-if="isLoading" class="loading-container">
@@ -232,6 +261,7 @@ onUnmounted(() => {
           <span class="mood-emoji">{{ getMoodEmoji(diary.mood) }}</span>
           <h1 class="title">
             <span v-if="diary.is_public === false" class="private-badge">🔒</span>
+            <span v-if="diary.is_pinned" class="pinned-badge" title="已置顶">📌</span>
             {{ diary.title }}
           </h1>
         </div>
@@ -522,6 +552,17 @@ onUnmounted(() => {
 .private-badge {
   font-size: 0.85em;
   flex-shrink: 0;
+}
+
+.pinned-badge {
+  font-size: 0.85em;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.pinned-icon {
+  color: var(--pink-500);
+  transform: rotate(45deg);
 }
 
 .meta-line {
