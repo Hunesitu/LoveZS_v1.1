@@ -595,3 +595,62 @@ class DiaryComment(models.Model):
 
     def __str__(self):
         return f"{self.created_by} - {self.diary.title}"
+
+
+# ========================================
+# Notification 模型 (通知消息)
+# ========================================
+
+class Notification(models.Model):
+    """
+    通知消息模型
+    当用户收到评论、点赞等通知时使用
+    """
+    NOTIFICATION_TYPES = [
+        ('diary_comment', '日记评论'),
+        ('diary_created', '新日记发布'),
+        ('diary_like', '日记点赞'),  # 预留
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name='接收者'
+    )
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, verbose_name='通知类型')
+    title = models.CharField(max_length=100, verbose_name='通知标题')
+    content = models.TextField(blank=True, verbose_name='通知内容')
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='sent_notifications',
+        verbose_name='发送者'
+    )
+    diary = models.ForeignKey(
+        Diary,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notifications',
+        verbose_name='关联日记'
+    )
+    comment = models.ForeignKey(
+        DiaryComment,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notifications',
+        verbose_name='关联评论'
+    )
+    is_read = models.BooleanField(default=False, verbose_name='已读')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '通知'
+        verbose_name_plural = '通知'
+
+    def __str__(self):
+        return f"{self.user} - {self.title}"

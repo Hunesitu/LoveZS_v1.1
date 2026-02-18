@@ -412,3 +412,42 @@ export interface FilterParams {
  */
 export interface DiaryQueryParams extends PaginationParams, FilterParams {
 }
+
+// ========================================
+// 通知消息类型
+// ========================================
+
+/**
+ * 通知消息类型
+ */
+export type NotificationType = 'diary_comment' | 'diary_created' | 'diary_like'
+
+/**
+ * 通知消息模型
+ */
+export interface Notification {
+  id: number
+  type: NotificationType
+  title: string
+  content: string
+  from_user: number
+  from_user_details?: UserBasic
+  diary?: number
+  comment?: number
+  is_read: boolean
+  created_at: string
+}
+
+/**
+ * 通知列表响应
+ */
+export interface NotificationsListResponse {
+  notifications: Notification[]
+  unread_count: number
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}

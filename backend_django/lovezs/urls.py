@@ -19,6 +19,7 @@ router = DefaultRouter()
 router.register(r'diaries', views.DiaryViewSet, basename='diary')
 router.register(r'photos', views.PhotoViewSet, basename='photo')
 router.register(r'countdowns', views.CountdownViewSet, basename='countdown')
+router.register(r'notifications', views.NotificationViewSet, basename='notification')
 
 app_name = 'lovezs'
 
