@@ -7,7 +7,7 @@ LoveZs API Serializers
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment
+from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment, Notification
 
 User = get_user_model()
 
@@ -428,3 +428,24 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+
+# ========================================
+# Notification Serializer
+# ========================================
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """
+    通知消息序列化器
+    """
+    from_user_details = UserBasicSerializer(source='from_user', read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 'type', 'title', 'content',
+            'from_user', 'from_user_details',
+            'diary', 'comment',
+            'is_read', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']

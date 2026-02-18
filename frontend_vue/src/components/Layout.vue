@@ -16,22 +16,34 @@ import {
   Heart,
   ChevronRight,
   LogOut,
-  User
+  User,
+  Bell
 } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notification'
 import { logout } from '@/api/auth'
+import { onMounted } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
+
+// 页面加载时获取未读消息数量
+onMounted(() => {
+  if (userStore.isAuthenticated) {
+    notificationStore.fetchNotifications()
+  }
+})
 
 // 侧边栏菜单项
 const menuItems = [
   { name: 'dashboard', label: '仪表盘', icon: Home, path: '/dashboard' },
   { name: 'diaries', label: '日记', icon: BookOpen, path: '/diaries' },
   { name: 'countdowns', label: '重要日', icon: Calendar, path: '/countdowns' },
+  { name: 'notifications', label: '消息', icon: Bell, path: '/notifications', showBadge: true },
   { name: 'settings', label: '设置', icon: Settings, path: '/settings' },
 ]
 
@@ -132,6 +144,13 @@ const toggleUserMenu = () => {
           >
             <component :is="item.icon" :size="20" />
             <span>{{ item.label }}</span>
+            <!-- 未读消息徽章 -->
+            <span
+              v-if="item.showBadge && notificationStore.unreadCount > 0"
+              class="badge"
+            >
+              {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+            </span>
             <ChevronRight v-if="currentRouteName === item.name" :size="16" class="active-indicator" />
           </li>
         </ul>
@@ -305,6 +324,22 @@ const toggleUserMenu = () => {
 
 .active-indicator {
   margin-left: auto;
+}
+
+/* 未读消息徽章 */
+.badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--pink-500);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-footer {

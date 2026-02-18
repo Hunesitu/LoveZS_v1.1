@@ -29,7 +29,7 @@ from rest_framework.response import Response
 
 from django.db.models import Q
 
-from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment
+from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment, Notification
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
     PhotoSerializer, PhotoListSerializer, PhotoCreateSerializer,
@@ -37,6 +37,7 @@ from .serializers import (
     DiaryCommentSerializer,
     CountdownSerializer, CountdownListSerializer,
     CategoryListSerializer, TagListSerializer,
+    NotificationSerializer,
 )
 
 
@@ -100,7 +101,27 @@ class DiaryViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """创建时自动设置创建者"""
-        return serializer.save(created_by=self.request.user)
+        diary = serializer.save(created_by=self.request.user)
+
+        # 给所有其他用户发送新日记通知
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        all_users = User.objects.exclude(id=self.request.user.id)
+
+        notifications = [
+            Notification(
+                user=user,
+                type='diary_created',
+                title=f'{self.request.user.username} 发表了新日记',
+                content=diary.title,
+                from_user=self.request.user,
+                diary=diary,
+            )
+            for user in all_users
+        ]
+        Notification.objects.bulk_create(notifications)
+
+        return diary
 
     def get_serializer_class(self):
         """根据操作选择序列化器"""
@@ -280,7 +301,20 @@ class DiaryViewSet(viewsets.ModelViewSet):
 
         serializer = DiaryCommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(diary=diary, created_by=request.user, parent=parent_comment)
+        comment = serializer.save(diary=diary, created_by=request.user, parent=parent_comment)
+
+        # 创建通知：给日记作者发送评论通知
+        if diary.created_by and diary.created_by != request.user:
+            Notification.objects.create(
+                user=diary.created_by,
+                type='diary_comment',
+                title=f'{request.user.username} 评论了你的日记',
+                content=comment.content[:100],  # 截取前100字符作为通知内容
+                from_user=request.user,
+                diary=diary,
+                comment=comment,
+            )
+
         return success_response(
             {'comment': serializer.data},
             message='评论发表成功'
@@ -600,3 +634,69 @@ def health_check(request):
         'timestamp': timezone.now().isoformat(),
         'service': 'LoveZs API',
     })
+
+
+# ========================================
+# Notification ViewSet
+# ========================================
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    通知消息 API 视图集
+    """
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """获取当前用户的消息列表"""
+        return Notification.objects.filter(
+            user=self.request.user
+        ).select_related('from_user', 'diary', 'comment')
+
+    def list(self, request, *args, **kwargs):
+        """
+        获取消息列表
+        GET /api/notifications/
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # 未读数量
+        unread_count = queryset.filter(is_read=False).count()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({
+                'notifications': serializer.data,
+                'unread_count': unread_count,
+            })
+
+        serializer = self.get_serializer(queryset, many=True)
+        return success_response({
+            'notifications': serializer.data,
+            'unread_count': unread_count,
+        })
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        标记消息为已读
+        PATCH /api/notifications/{id}/
+        """
+        instance = self.get_object()
+        instance.is_read = True
+        instance.save(update_fields=['is_read'])
+        serializer = self.get_serializer(instance)
+        return success_response({'notification': serializer.data}, message='标记已读成功')
+
+    @action(detail=False, methods=['post'], url_path='read-all')
+    def mark_all_as_read(self, request):
+        """
+        全部标记已读
+        POST /api/notifications/read-all/
+        """
+        queryset = self.get_queryset()
+        updated_count = queryset.filter(is_read=False).update(is_read=True)
+        return success_response(
+            {'updated_count': updated_count},
+            message=f'已更新 {updated_count} 条消息为已读'
+        )
