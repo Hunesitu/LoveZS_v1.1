@@ -303,7 +303,8 @@ class CountdownSerializer(serializers.ModelSerializer):
     formatted_target_date = serializers.ReadOnlyField()
     status = serializers.ReadOnlyField()
 
-    # 新增：重复日期字段
+    # 重复类型字段（允许 null，当 is_recurring=False 时前端传 null）
+    recurring_type = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     recurring_month = serializers.IntegerField(required=False, allow_null=True)
     recurring_day = serializers.IntegerField(required=False, allow_null=True)
 
@@ -322,6 +323,10 @@ class CountdownSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_recurring_type(self, value):
+        """将 null 转换为空字符串，兼容前端 is_recurring=False 时传 null"""
+        return value if value is not None else ''
 
 
 class CountdownListSerializer(serializers.ModelSerializer):
