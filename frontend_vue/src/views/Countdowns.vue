@@ -194,8 +194,8 @@ const handleEdit = (countdown: Countdown) => {
   editingId.value = countdown.id
   title.value = countdown.title
   isRecurring.value = countdown.is_recurring
-  recurringMonth.value = countdown.recurring_month
-  recurringDay.value = countdown.recurring_day
+  recurringMonth.value = countdown.recurring_month ?? null
+  recurringDay.value = countdown.recurring_day ?? null
 
   if (countdown.is_recurring && countdown.recurring_month && countdown.recurring_day) {
     // 每年重复：从 target_date 提取年
