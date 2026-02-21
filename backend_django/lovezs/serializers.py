@@ -323,44 +323,6 @@ class CountdownSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-    def validate(self, data):
-        """
-        验证重复类型和日期字段
-        """
-        # 获取字段值，如果未提供则使用实例的值
-        if self.instance:
-            is_recurring = data.get('is_recurring', self.instance.is_recurring)
-            recurring_type = data.get('recurring_type', self.instance.recurring_type)
-            recurring_month = data.get('recurring_month')
-            recurring_day = data.get('recurring_day')
-            # 处理 null 和 undefined
-            if recurring_month is None:
-                recurring_month = self.instance.recurring_month
-            if recurring_day is None:
-                recurring_day = self.instance.recurring_day
-            target_date = data.get('target_date')
-            if not target_date:
-                target_date = self.instance.target_date
-        else:
-            is_recurring = data.get('is_recurring', False)
-            recurring_type = data.get('recurring_type')
-            recurring_month = data.get('recurring_month')
-            recurring_day = data.get('recurring_day')
-            target_date = data.get('target_date')
-
-        # 如果是重复事件且设置了 recurring_type 为 yearly
-        if is_recurring and recurring_type == 'yearly':
-            if recurring_month and recurring_day:
-                # 验证日期是否有效
-                import calendar
-                max_day = calendar.monthrange(2024, recurring_month)[1]
-                if recurring_day > max_day:
-                    raise serializers.ValidationError({
-                        'recurring_day': f'{recurring_month}月最多{max_day}天'
-                    })
-
-        return data
-
 
 class CountdownListSerializer(serializers.ModelSerializer):
     """
