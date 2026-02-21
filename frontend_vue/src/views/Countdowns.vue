@@ -256,6 +256,11 @@ const handleUpdate = async () => {
     uiStore.showToast('更新成功', 'success')
   } catch (err: any) {
     console.error('更新重要日失败', err)
+    // 打印详细的错误信息
+    const errorData = err.response?.data
+    if (errorData) {
+      console.log('错误详情:', JSON.stringify(errorData, null, 2))
+    }
     const errorMsg = err.response?.data?.message || err.message || '更新失败'
     uiStore.showToast(`更新失败: ${errorMsg}`, 'error')
   } finally {
