@@ -238,6 +238,7 @@ const handleUpdate = async () => {
       title: title.value,
       is_recurring: isRecurring.value,
       recurring_type: isRecurring.value ? 'yearly' : undefined,
+      type: 'other',  // 默认类型
     }
 
     if (isRecurring.value) {
