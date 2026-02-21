@@ -331,9 +331,16 @@ class CountdownSerializer(serializers.ModelSerializer):
         if self.instance:
             is_recurring = data.get('is_recurring', self.instance.is_recurring)
             recurring_type = data.get('recurring_type', self.instance.recurring_type)
-            recurring_month = data.get('recurring_month', self.instance.recurring_month)
-            recurring_day = data.get('recurring_day', self.instance.recurring_day)
-            target_date = data.get('target_date', self.instance.target_date)
+            recurring_month = data.get('recurring_month')
+            recurring_day = data.get('recurring_day')
+            # 处理 null 和 undefined
+            if recurring_month is None:
+                recurring_month = self.instance.recurring_month
+            if recurring_day is None:
+                recurring_day = self.instance.recurring_day
+            target_date = data.get('target_date')
+            if not target_date:
+                target_date = self.instance.target_date
         else:
             is_recurring = data.get('is_recurring', False)
             recurring_type = data.get('recurring_type')
@@ -341,25 +348,16 @@ class CountdownSerializer(serializers.ModelSerializer):
             recurring_day = data.get('recurring_day')
             target_date = data.get('target_date')
 
-        # 验证重复事件
+        # 如果是重复事件且设置了 recurring_type 为 yearly
         if is_recurring and recurring_type == 'yearly':
-            if not recurring_month or not recurring_day:
-                raise serializers.ValidationError({
-                    'recurring_month': '每年重复事件必须指定月份和日期'
-                })
-            # 验证日期是否有效
-            import calendar
-            max_day = calendar.monthrange(2024, recurring_month)[1]
-            if recurring_day > max_day:
-                raise serializers.ValidationError({
-                    'recurring_day': f'{recurring_month}月最多{max_day}天'
-                })
-
-        # 验证非重复事件必须有目标日期
-        if not is_recurring and not target_date:
-            raise serializers.ValidationError({
-                'target_date': '非重复事件必须指定目标日期'
-            })
+            if recurring_month and recurring_day:
+                # 验证日期是否有效
+                import calendar
+                max_day = calendar.monthrange(2024, recurring_month)[1]
+                if recurring_day > max_day:
+                    raise serializers.ValidationError({
+                        'recurring_day': f'{recurring_month}月最多{max_day}天'
+                    })
 
         return data
 
