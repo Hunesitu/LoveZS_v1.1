@@ -14,7 +14,7 @@ import type { Photo } from '@/types'
 
 dayjs.locale('zh-cn')
 
-const { diaries, isLoading, loadDiaries } = useDiaries()
+const { diaries, isLoading, loadDiaries, totalCount } = useDiaries()
 
 // 相恋纪念日（硬编码）
 const LOVE_ANNIVERSARY = '2023-09-09'
@@ -38,7 +38,7 @@ const calculateNextMilestone = (currentDays: number) => {
   }
 }
 
-const diaryCount = computed(() => diaries.value.length)
+const diaryCount = totalCount  // 使用后端返回的真实总数
 
 const loadDashboardData = async () => {
   try {
