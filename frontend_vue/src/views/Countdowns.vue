@@ -8,11 +8,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useCountdowns } from '@/composables/useCountdowns'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
-import { Plus, Trash2, Calendar as CalendarIcon, Heart, Clock } from 'lucide-vue-next'
+import { Plus, Trash2, Calendar as CalendarIcon, Heart, Clock, Edit } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import type { Countdown, CreateCountdownRequest } from '@/types'
 
-const { countdowns, isLoading, loadCountdowns, createCountdown, deleteCountdown } = useCountdowns()
+const { countdowns, isLoading, loadCountdowns, createCountdown, updateCountdown, deleteCountdown } = useCountdowns()
 const uiStore = useUiStore()
 const userStore = useUserStore()
 
@@ -23,6 +23,9 @@ const isRecurring = ref(false)
 const recurringMonth = ref<number | null>(null)
 const recurringDay = ref<number | null>(null)
 const isSubmitting = ref(false)
+
+// 编辑状态
+const editingId = ref<number | null>(null)
 
 // 里程碑天数
 const milestones = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 3000, 5000, 10000]
@@ -186,6 +189,79 @@ const handleDelete = async (id: number) => {
   }
 }
 
+// 开始编辑
+const handleEdit = (countdown: Countdown) => {
+  editingId.value = countdown.id
+  title.value = countdown.title
+  isRecurring.value = countdown.is_recurring
+  recurringMonth.value = countdown.recurring_month
+  recurringDay.value = countdown.recurring_day
+
+  if (countdown.is_recurring && countdown.recurring_month && countdown.recurring_day) {
+    // 每年重复：从 target_date 提取年
+    const currentYear = new Date().getFullYear()
+    targetDate.value = `${currentYear}-${String(countdown.recurring_month).padStart(2, '0')}-${String(countdown.recurring_day).padStart(2, '0')}`
+  } else {
+    targetDate.value = countdown.target_date
+  }
+}
+
+// 取消编辑
+const cancelEdit = () => {
+  editingId.value = null
+  title.value = ''
+  targetDate.value = ''
+  isRecurring.value = false
+  recurringMonth.value = null
+  recurringDay.value = null
+}
+
+// 更新重要日
+const handleUpdate = async () => {
+  if (!title.value || !editingId.value) return
+
+  // 验证每年重复模式的必填项
+  if (isRecurring.value && (!recurringMonth.value || !recurringDay.value)) {
+    uiStore.showToast('请选择月份和日期', 'error')
+    return
+  }
+
+  // 验证固定日期模式的必填项
+  if (!isRecurring.value && !targetDate.value) {
+    uiStore.showToast('请选择日期', 'error')
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const data: CreateCountdownRequest = {
+      title: title.value,
+      is_recurring: isRecurring.value,
+      recurring_type: isRecurring.value ? 'yearly' : undefined,
+    }
+
+    if (isRecurring.value) {
+      data.recurring_month = recurringMonth.value!
+      data.recurring_day = recurringDay.value!
+      data.direction = 'countup'
+    } else {
+      data.target_date = targetDate.value
+      const date = dayjs(targetDate.value)
+      data.direction = date.isBefore(dayjs(), 'day') ? 'countup' : 'countdown'
+    }
+
+    await updateCountdown(editingId.value, data)
+    cancelEdit()
+    uiStore.showToast('更新成功', 'success')
+  } catch (err: any) {
+    console.error('更新重要日失败', err)
+    const errorMsg = err.response?.data?.message || err.message || '更新失败'
+    uiStore.showToast(`更新失败: ${errorMsg}`, 'error')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
 // 组件挂载时加载数据
 onMounted(() => {
   loadData()
@@ -203,10 +279,10 @@ onMounted(() => {
       <p class="page-subtitle">记录那些重要的日子</p>
     </div>
 
-    <!-- 创建表单（仅管理员可见） -->
+    <!-- 创建/编辑表单（仅管理员可见） -->
     <div v-if="userStore.isAdmin" class="card form-card">
-      <h2 class="section-title">添加新重要日</h2>
-      <form @submit.prevent="handleCreate" class="create-form">
+      <h2 class="section-title">{{ editingId ? '编辑重要日' : '添加新重要日' }}</h2>
+      <form @submit.prevent="editingId ? handleUpdate() : handleCreate()" class="create-form">
         <div class="form-group">
           <label class="form-label">标题</label>
           <input
@@ -271,9 +347,13 @@ onMounted(() => {
         </div>
 
         <div class="form-group form-submit">
+          <button v-if="editingId" type="button" class="btn-secondary" @click="cancelEdit" :disabled="isSubmitting">
+            取消
+          </button>
           <button type="submit" class="btn-primary" :disabled="isSubmitting">
-            <Plus v-if="!isSubmitting" :size="16" class="mr-2" />
-            <span v-if="isSubmitting">创建中...</span>
+            <Plus v-if="!isSubmitting && !editingId" :size="16" class="mr-2" />
+            <span v-if="isSubmitting">{{ editingId ? '更新中...' : '创建中...' }}</span>
+            <span v-else-if="editingId">更新</span>
             <span v-else>添加</span>
           </button>
         </div>
@@ -329,14 +409,24 @@ onMounted(() => {
               <span class="days-text">{{ getDaysText(c) }}</span>
             </div>
           </div>
-          <button
-            v-if="userStore.isAdmin"
-            @click="handleDelete(c.id)"
-            class="delete-btn"
-            title="删除"
-          >
-            <Trash2 :size="16" />
-          </button>
+          <div class="item-actions">
+            <button
+              v-if="userStore.isAdmin"
+              @click="handleEdit(c)"
+              class="edit-btn"
+              title="编辑"
+            >
+              <Edit :size="16" />
+            </button>
+            <button
+              v-if="userStore.isAdmin"
+              @click="handleDelete(c.id)"
+              class="delete-btn"
+              title="删除"
+            >
+              <Trash2 :size="16" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -679,6 +769,29 @@ onMounted(() => {
   color: #c45c7c;
   background: #fff2f6;
   border-color: #f2bfd1;
+}
+
+.edit-btn {
+  padding: 0.28rem;
+  color: #af94a2;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base);
+  display: inline-flex;
+  align-items: center;
+}
+
+.edit-btn:hover {
+  color: var(--pink-500);
+  background: var(--pink-50);
+  border-color: var(--border-soft);
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.25rem;
 }
 
 .empty-state {
