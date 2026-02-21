@@ -207,17 +207,6 @@ const nextPhoto = () => {
   if (previewIndex.value < photoCount.value - 1) previewIndex.value++
 }
 
-// 触摸滑动支持
-let touchStartX = 0
-const onTouchStart = (e: TouchEvent) => { touchStartX = e.touches[0]?.clientX ?? 0 }
-const onTouchEnd = (e: TouchEvent) => {
-  const endX = e.changedTouches[0]?.clientX
-  if (endX == null) return
-  const delta = endX - touchStartX
-  if (Math.abs(delta) > 50) {
-    delta > 0 ? prevPhoto() : nextPhoto()
-  }
-}
 
 const submitComment = async () => {
   if (!commentContent.value.trim()) return
@@ -518,8 +507,6 @@ onUnmounted(() => {
       role="dialog"
       aria-modal="true"
       @click="closePreview"
-      @touchstart.passive="onTouchStart"
-      @touchend="onTouchEnd"
       @wheel="handleWheel"
     >
       <div
