@@ -1,7 +1,6 @@
-﻿<!--
-DiaryEditor 椤甸潰
-瀵瑰簲鍘? frontend/src/pages/DiaryEditor.tsx
-鏃ヨ缂栬緫鍣紝Markdown 缂栬緫锛岀収鐗囧叧鑱?
+<!--
+DiaryEditor 页面
+日记编辑器，Markdown 编辑，照片关联
 -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
@@ -10,7 +9,7 @@ import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
 import { Save, X } from 'lucide-vue-next'
 import dayjs from 'dayjs'
-import type { Mood, CreateDiaryRequest, Photo } from '@/types'
+import type { Mood, CreateDiaryRequest, Photo, Diary } from '@/types'
 import photoService from '@/api/photo'
 import diaryService from '@/api/diary'
 import { resolveMediaUrl, isVideo } from '@/utils/media'
@@ -38,6 +37,16 @@ const isSubmitting = ref(false)
 const isPageLoading = ref(false)
 const uploadedPhotos = ref<Photo[]>([])
 const isUploading = ref(false)
+
+// 多选模式状态
+const isSelectMode = ref(false)
+const selectedPhotoIds = ref<Set<number>>(new Set())
+const showMoveDialog = ref(false)
+const targetDiaryId = ref<number | null>(null)
+const availableDiaries = ref<Diary[]>([])
+const isMoving = ref(false)
+
+const selectedCount = computed(() => selectedPhotoIds.value.size)
 
 // 心情选项
 const moodOptions: { value: Mood; label: string; emoji: string }[] = [
@@ -155,6 +164,67 @@ const removeAttachedPhoto = (photoId: number) => {
   formData.value.photo_ids = (formData.value.photo_ids || []).filter((id) => id !== photoId)
 }
 
+// ========================================
+// 多选管理
+// ========================================
+
+// 进入/退出选择模式
+const toggleSelectMode = () => {
+  isSelectMode.value = !isSelectMode.value
+  if (!isSelectMode.value) {
+    selectedPhotoIds.value = new Set()
+  }
+}
+
+// 切换单张照片选中状态
+const togglePhotoSelect = (id: number) => {
+  const s = new Set(selectedPhotoIds.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  selectedPhotoIds.value = s
+}
+
+// 批量删除（从当前日记移除，不删除照片文件）
+const deleteSelected = () => {
+  const ids = selectedPhotoIds.value
+  uploadedPhotos.value = uploadedPhotos.value.filter(p => !ids.has(p.id))
+  formData.value.photo_ids = (formData.value.photo_ids || []).filter(id => !ids.has(id))
+  selectedPhotoIds.value = new Set()
+  isSelectMode.value = false
+}
+
+// 打开移动对话框（加载日记列表）
+const openMoveDialog = async () => {
+  try {
+    const response = await diaryService.getDiaries({ page_size: 100 } as any)
+    availableDiaries.value = response.diaries.filter(d => d.id !== diaryId.value)
+  } catch {
+    availableDiaries.value = []
+  }
+  targetDiaryId.value = null
+  showMoveDialog.value = true
+}
+
+// 确认移动照片到目标日记
+const confirmMove = async () => {
+  if (!targetDiaryId.value) return
+  isMoving.value = true
+  try {
+    const ids = [...selectedPhotoIds.value]
+    await diaryService.attachPhotos(targetDiaryId.value, ids)
+    // 从本篇表单中移除（保存时最终生效）
+    uploadedPhotos.value = uploadedPhotos.value.filter(p => !selectedPhotoIds.value.has(p.id))
+    formData.value.photo_ids = (formData.value.photo_ids || []).filter(id => !selectedPhotoIds.value.has(id))
+    selectedPhotoIds.value = new Set()
+    isSelectMode.value = false
+    showMoveDialog.value = false
+    uiStore.showToast(`已移动 ${ids.length} 张照片`, 'success')
+  } catch {
+    uiStore.showToast('移动失败，请重试', 'error')
+  } finally {
+    isMoving.value = false
+  }
+}
+
 // 保存日记
 const saveDiary = async () => {
   if (!formData.value.title.trim()) {
@@ -199,7 +269,7 @@ onMounted(() => {
 
 <template>
   <div class="diary-editor-page">
-    <!-- 澶撮儴 -->
+    <!-- 头部 -->
     <div class="editor-header">
       <h1 class="page-title">{{ isEditMode ? '编辑日记' : '写日记' }}</h1>
       <div class="header-actions">
@@ -218,7 +288,7 @@ onMounted(() => {
       <div class="spinner"></div>
     </div>
 
-    <!-- 琛ㄥ崟 -->
+    <!-- 表单 -->
     <div v-else class="editor-form">
       <!-- 标题 -->
       <div class="form-group">
@@ -231,7 +301,7 @@ onMounted(() => {
         />
       </div>
 
-      <!-- 鏃ユ湡鍜屽績鎯?-->
+      <!-- 日期和心情 -->
       <div class="form-row">
         <div class="form-group flex-1">
           <label class="form-label">日期</label>
@@ -289,8 +359,40 @@ onMounted(() => {
         <p class="help-text">支持 Markdown 语法，可直接粘贴图片上传</p>
       </div>
 
+      <!-- 照片/视频管理区 -->
       <div class="form-group">
-        <label class="form-label">添加图片或视频</label>
+        <!-- 工具栏 -->
+        <div class="photo-toolbar">
+          <label class="form-label">添加图片或视频</label>
+          <!-- 编辑模式且有照片时，显示多选操作按钮 -->
+          <div v-if="isEditMode && uploadedPhotos.length > 0" class="photo-actions">
+            <button v-if="!isSelectMode" type="button" class="btn-select" @click="toggleSelectMode">
+              选择
+            </button>
+            <template v-else>
+              <button
+                type="button"
+                class="btn-delete-selected"
+                :disabled="selectedCount === 0"
+                @click="deleteSelected"
+              >
+                删除 ({{ selectedCount }})
+              </button>
+              <button
+                type="button"
+                class="btn-move-selected"
+                :disabled="selectedCount === 0"
+                @click="openMoveDialog"
+              >
+                移动到其他日记 ({{ selectedCount }})
+              </button>
+              <button type="button" class="btn-cancel-select" @click="toggleSelectMode">
+                取消
+              </button>
+            </template>
+          </div>
+        </div>
+
         <div class="upload-card">
           <input
             id="diary-photo-input"
@@ -306,7 +408,13 @@ onMounted(() => {
         </div>
 
         <div v-if="uploadedPhotos.length > 0" class="attached-list">
-          <div v-for="photo in uploadedPhotos" :key="photo.id" class="attached-item">
+          <div
+            v-for="photo in uploadedPhotos"
+            :key="photo.id"
+            class="attached-item"
+            :class="{ 'is-selected': selectedPhotoIds.has(photo.id), 'select-mode': isSelectMode }"
+            @click="isSelectMode ? togglePhotoSelect(photo.id) : undefined"
+          >
             <video
               v-if="isVideo(photo)"
               :src="resolveMediaUrl(photo.url || '')"
@@ -320,8 +428,47 @@ onMounted(() => {
               :alt="photo.original_name"
               class="attached-image"
             />
-            <button class="attached-remove" @click="removeAttachedPhoto(photo.id)">移除</button>
+            <!-- 选中覆盖层 -->
+            <div v-if="isSelectMode" class="select-overlay">
+              <span class="select-check" :class="{ checked: selectedPhotoIds.has(photo.id) }">✓</span>
+            </div>
+            <!-- 非选择模式保留移除按钮 -->
+            <button v-if="!isSelectMode" class="attached-remove" @click="removeAttachedPhoto(photo.id)">
+              移除
+            </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 移动照片对话框 -->
+    <div v-if="showMoveDialog" class="move-dialog-overlay" @click.self="showMoveDialog = false">
+      <div class="move-dialog">
+        <h3 class="move-dialog-title">选择目标日记</h3>
+        <div class="diary-select-list">
+          <button
+            v-for="d in availableDiaries"
+            :key="d.id"
+            type="button"
+            class="diary-select-item"
+            :class="{ active: targetDiaryId === d.id }"
+            @click="targetDiaryId = d.id"
+          >
+            <span class="diary-select-title">{{ d.title }}</span>
+            <span class="diary-select-date">{{ d.date }}</span>
+          </button>
+          <p v-if="availableDiaries.length === 0" class="no-diaries">暂无其他日记</p>
+        </div>
+        <div class="move-dialog-actions">
+          <button type="button" class="btn-secondary" @click="showMoveDialog = false">取消</button>
+          <button
+            type="button"
+            class="btn-primary"
+            :disabled="!targetDiaryId || isMoving"
+            @click="confirmMove"
+          >
+            {{ isMoving ? '移动中...' : '确认移动' }}
+          </button>
         </div>
       </div>
     </div>
@@ -530,10 +677,21 @@ onMounted(() => {
 }
 
 .attached-item {
+  position: relative;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: #fff;
+  transition: border-color var(--dur-fast);
+}
+
+.attached-item.select-mode {
+  cursor: pointer;
+}
+
+.attached-item.is-selected {
+  border-color: var(--pink-400);
+  box-shadow: 0 0 0 2px rgba(217, 117, 154, 0.35);
 }
 
 .attached-image {
@@ -552,6 +710,200 @@ onMounted(() => {
   cursor: pointer;
   padding: 0.4rem 0;
   font-size: 0.78rem;
+}
+
+/* 多选相关 */
+.photo-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.photo-toolbar .form-label {
+  margin-bottom: 0;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-select,
+.btn-cancel-select {
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color var(--dur-base), color var(--dur-base);
+}
+
+.btn-select:hover,
+.btn-cancel-select:hover {
+  background: var(--pink-50);
+  color: var(--text-primary);
+}
+
+.btn-delete-selected {
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fca5a5;
+  background: #fff1f1;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color var(--dur-base);
+}
+
+.btn-delete-selected:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.btn-delete-selected:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-move-selected {
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: linear-gradient(135deg, var(--pink-500) 0%, var(--rose-500) 100%);
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: opacity var(--dur-base);
+}
+
+.btn-move-selected:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.select-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 0.3rem;
+}
+
+.select-check {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: transparent;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+
+.select-check.checked {
+  background: var(--pink-500);
+  color: #fff;
+}
+
+/* 移动对话框 */
+.move-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.move-dialog {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.move-dialog-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1rem;
+}
+
+.diary-select-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  max-height: 50vh;
+}
+
+.diary-select-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.875rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--dur-fast), background-color var(--dur-fast);
+}
+
+.diary-select-item:hover {
+  background: var(--pink-50);
+  border-color: var(--pink-200);
+}
+
+.diary-select-item.active {
+  border-color: var(--pink-400);
+  background: var(--pink-50);
+}
+
+.diary-select-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+.diary-select-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.no-diaries {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 1.5rem 0;
+}
+
+.move-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
 }
 
 .ml-2 {
@@ -610,6 +962,20 @@ onMounted(() => {
     flex: 1;
     justify-content: center;
   }
+
+  .photo-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .photo-actions {
+    width: 100%;
+  }
+
+  .btn-move-selected {
+    font-size: 0.75rem;
+  }
 }
 
 @keyframes spin {
@@ -621,10 +987,3 @@ onMounted(() => {
   }
 }
 </style>
-
-
-
-
-
-
-
