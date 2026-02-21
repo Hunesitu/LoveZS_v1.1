@@ -40,7 +40,7 @@ onMounted(() => {
 
 // 侧边栏菜单项
 const menuItems = [
-  { name: 'dashboard', label: '仪表盘', icon: Home, path: '/dashboard' },
+  { name: 'dashboard', label: '首页', icon: Home, path: '/dashboard' },
   { name: 'diaries', label: '日记', icon: BookOpen, path: '/diaries' },
   { name: 'countdowns', label: '重要日', icon: Calendar, path: '/countdowns' },
   { name: 'notifications', label: '消息', icon: Bell, path: '/notifications', showBadge: true },
