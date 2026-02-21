@@ -245,6 +245,8 @@ const handleUpdate = async () => {
       data.recurring_month = recurringMonth.value!
       data.recurring_day = recurringDay.value!
       data.direction = 'countup'
+      // 占位日期（后端根据 recurring_month/day 计算实际日期）
+      data.target_date = `${new Date().getFullYear()}-${String(recurringMonth.value!).padStart(2, '0')}-${String(recurringDay.value!).padStart(2, '0')}`
     } else {
       data.target_date = targetDate.value
       const date = dayjs(targetDate.value)
