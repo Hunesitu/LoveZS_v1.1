@@ -10,6 +10,7 @@ import type { Diary, DiaryQueryParams, CreateDiaryRequest } from '@/types'
 export function useDiaries() {
   // 状态
   const diaries = ref<Diary[]>([])
+  const totalCount = ref(0)  // 数据库真实总数（来自后端 count 字段）
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -27,6 +28,7 @@ export function useDiaries() {
     try {
       const response = await diaryService.getDiaries(params)
       diaries.value = response.diaries || []
+      totalCount.value = response.total ?? 0
     } catch (err) {
       error.value = '加载日记失败'
       console.error('Error loading diaries:', err)
@@ -47,6 +49,7 @@ export function useDiaries() {
       const response = await diaryService.createDiary(data)
       // 将新日记添加到列表开头
       diaries.value.unshift(response.diary)
+      totalCount.value++
       return response.diary
     } catch (err) {
       error.value = '创建日记失败'
@@ -92,6 +95,7 @@ export function useDiaries() {
       await diaryService.deleteDiary(id)
       // 从列表中移除
       diaries.value = diaries.value.filter(d => d.id !== id)
+      totalCount.value = Math.max(0, totalCount.value - 1)
     } catch (err) {
       error.value = '删除日记失败'
       console.error('Error deleting diary:', err)
@@ -116,6 +120,7 @@ export function useDiaries() {
   return {
     // 状态
     diaries,
+    totalCount,
     isLoading,
     error,
 

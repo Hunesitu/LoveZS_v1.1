@@ -31,10 +31,13 @@ interface DiariesResult {
 /**
  * 获取日记列表
  */
-export const getDiaries = async (params?: DiaryQueryParams): Promise<{ diaries: Diary[] }> => {
+export const getDiaries = async (params?: DiaryQueryParams): Promise<{ diaries: Diary[]; total: number }> => {
   const response = await api.get<DjangoPaginatedResponse<DiariesResult>>('/diaries/', { params })
   const result = response.data.results
-  return { diaries: result?.diaries ?? [] }
+  return {
+    diaries: result?.diaries ?? [],
+    total: response.data.count ?? 0,
+  }
 }
 
 /**
