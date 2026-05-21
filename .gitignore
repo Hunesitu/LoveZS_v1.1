@@ -46,7 +46,12 @@ dist/
 # Environment
 .env
 .env.local
+.env.prod
 .env.*.local
+backend_django/.env.prod
+
+# TLS certificates and private keys
+deploy/nginx/ssl/
 
 # Logs
 logs/
