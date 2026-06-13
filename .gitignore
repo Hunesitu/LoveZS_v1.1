@@ -29,6 +29,9 @@ db.sqlite3-journal
 /staticfiles/
 backend_django/media/
 backend_django/nul
+
+# Runtime data mounted by Docker / generated in production
+data/
 # Vue
 node_modules/
 dist/
