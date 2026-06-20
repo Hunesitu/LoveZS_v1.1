@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LoveZs · 极简画廊版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+SC:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #faf9f7;
+    --ink: #0a0a0a;
+    --ink-soft: #555;
+    --muted: #999;
+    --line: #ebebe9;
+    --accent: #0a0a0a;
+    --serif: 'Playfair Display', 'Noto Sans SC', serif;
+    --sans: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg); color: var(--ink);
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+    font-weight: 300;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 240px; flex-shrink: 0; position: fixed; top:0;left:0;bottom:0;
+    background: var(--bg); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 2.5rem 1.5rem; z-index: 10;
+  }
+  .brand { padding-bottom: 2.5rem; }
+  .brand-name { font-family: var(--serif); font-size: 1.3rem; font-weight: 500; letter-spacing: 0.02em; }
+  .brand-name em { font-style: italic; font-weight: 400; }
+  .brand-sub { font-size: 0.58rem; letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase; margin-top: 0.4rem; font-weight: 400; }
+  .nav { flex: 1; display: flex; flex-direction: column; gap: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 1rem; padding: 0.9rem 0;
+    color: var(--ink-soft); font-size: 0.82rem; cursor: pointer; font-weight: 400;
+    border-bottom: 1px solid var(--line); letter-spacing: 0.02em;
+    transition: color 0.2s, padding-left 0.2s;
+  }
+  .nav-item:hover { color: var(--ink); padding-left: 0.5rem; }
+  .nav-item.active { color: var(--ink); font-weight: 500; }
+  .nav-num { font-family: var(--serif); font-style: italic; font-size: 0.75rem; color: var(--muted); min-width: 18px; }
+  .nav-item.active .nav-num { color: var(--ink); }
+  .nav-badge { margin-left: auto; background: var(--ink); color: var(--bg); font-size: 0.6rem; padding: 1px 5px; border-radius: 1px; }
+  .sidebar-foot { padding-top: 2rem; border-top: 1px solid var(--line); }
+  .foot-name { font-family: var(--serif); font-style: italic; font-size: 0.95rem; color: var(--ink); }
+  .foot-mail { font-family: var(--sans); font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+
+  .main { flex: 1; margin-left: 240px; padding: 4rem 4.5rem 5rem; max-width: 1100px; }
+
+  /* Hero 极简 */
+  .hero { margin-bottom: 4rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--line); }
+  .hero-eyebrow {
+    display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.5rem;
+    font-size: 0.62rem; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; font-weight: 500;
+  }
+  .hero-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--ink); }
+  .hero-title {
+    font-family: var(--serif); font-size: 3.2rem; font-weight: 400; line-height: 1.15;
+    letter-spacing: -0.015em; color: var(--ink); margin-bottom: 1rem;
+  }
+  .hero-title em { font-style: italic; }
+  .hero-sub { font-size: 0.95rem; color: var(--ink-soft); font-weight: 300; max-width: 540px; line-height: 1.6; }
+  .hero-date { margin-top: 1.5rem; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
+
+  /* 大数字陈列 */
+  .feature {
+    display: grid; grid-template-columns: 1.4fr 1px 1fr; gap: 3rem; align-items: center;
+    margin-bottom: 4rem; padding: 1rem 0;
+  }
+  .feature-divider { width: 1px; height: 140px; background: var(--line); align-self: center; }
+  .feature-left {}
+  .feature-label { font-size: 0.62rem; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; margin-bottom: 1rem; font-weight: 500; }
+  .feature-days {
+    font-family: var(--serif); font-size: 7rem; font-weight: 400; line-height: 0.9;
+    letter-spacing: -0.04em; color: var(--ink); display: flex; align-items: baseline; gap: 0.5rem;
+  }
+  .feature-days .unit { font-family: var(--sans); font-size: 0.9rem; color: var(--muted); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; }
+  .feature-since { margin-top: 1rem; font-size: 0.8rem; color: var(--ink-soft); }
+  .feature-since em { font-family: var(--serif); font-style: italic; color: var(--ink); }
+  .feature-right { padding-left: 1rem; }
+  .feature-mile { font-family: var(--serif); font-size: 3rem; font-weight: 400; color: var(--ink); line-height: 1; letter-spacing: -0.02em; }
+  .feature-mile small { font-family: var(--sans); font-size: 0.85rem; color: var(--muted); font-weight: 400; }
+  .feature-mile-label { margin-top: 0.5rem; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .feature-progress { width: 100%; height: 1px; background: var(--line); margin: 1rem 0 0; position: relative; }
+  .feature-progress > span { display: block; height: 1px; width: 82%; background: var(--ink); }
+
+  /* 统计 - 极简数字陈列 */
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-bottom: 4rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .stat { padding: 2rem 1.5rem; border-right: 1px solid var(--line); }
+  .stat:last-child { border-right: none; }
+  .stat-label { font-size: 0.62rem; letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase; margin-bottom: 1rem; font-weight: 500; }
+  .stat-val { font-family: var(--serif); font-size: 2.6rem; font-weight: 400; line-height: 1; letter-spacing: -0.02em; }
+  .stat-val .small { font-family: var(--sans); font-size: 0.85rem; color: var(--muted); font-weight: 400; }
+  .stat-sub { margin-top: 0.6rem; font-size: 0.78rem; color: var(--ink-soft); font-weight: 300; }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+  .section-title { font-family: var(--serif); font-size: 1.6rem; font-weight: 400; letter-spacing: -0.01em; }
+  .section-title em { font-style: italic; }
+  .section-meta { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; }
+  .section-link { font-size: 0.78rem; color: var(--ink); cursor: pointer; border-bottom: 1px solid var(--ink); padding-bottom: 1px; }
+
+  .diary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 2rem 2.5rem; }
+  .diary-card { cursor: pointer; }
+  .card-cover { aspect-ratio: 4/3; overflow: hidden; margin-bottom: 1rem; background: var(--bg-2); }
+  .card-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s cubic-bezier(.2,.7,.3,1); filter: grayscale(0.1); }
+  .diary-card:hover .card-cover img { transform: scale(1.04); filter: grayscale(0); }
+  .card-num { font-family: var(--serif); font-style: italic; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.3rem; }
+  .card-title { font-family: var(--serif); font-size: 1.35rem; font-weight: 500; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+  .card-excerpt { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.65; font-weight: 300; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 0.8rem; }
+  .card-foot { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; padding-top: 0.7rem; border-top: 1px solid var(--line); }
+  .card-cat { color: var(--ink); }
+  .card-meta { color: var(--muted); font-family: var(--serif); font-style: italic; text-transform: none; letter-spacing: 0; font-size: 0.78rem; }
+
+  .preview-bar { position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 0.6rem 1.5rem; border-radius: 0; font-size: 0.72rem; letter-spacing: 0.15em; z-index: 100; text-transform: uppercase; }
+  .preview-bar b { font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--bg); text-transform: none; }
+
+  @media (max-width: 860px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; padding: 2.5rem 1.5rem 5rem; }
+    .feature { grid-template-columns: 1fr; gap: 2rem; }
+    .feature-divider { display: none; }
+    .feature-right { padding-left: 0; }
+    .stats-row { grid-template-columns: 1fr; border: 1px solid var(--line); }
+    .stat { border-right: none; border-bottom: 1px solid var(--line); }
+    .stat:last-child { border-bottom: none; }
+    .diary-grid { grid-template-columns: 1fr; }
+    .hero-title { font-size: 2.2rem; }
+    .feature-days { font-size: 4.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-name">Love<em> &amp; </em>Zs</div>
+      <div class="brand-sub">A Diary of Us</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active"><span class="nav-num">i.</span><span>首页 Home</span></div>
+      <div class="nav-item"><span class="nav-num">ii.</span><span>日记 Diaries</span></div>
+      <div class="nav-item"><span class="nav-num">iii.</span><span>重要日 Days</span></div>
+      <div class="nav-item"><span class="nav-num">iv.</span><span>消息 Notes</span><span class="nav-badge">3</span></div>
+      <div class="nav-item"><span class="nav-num">v.</span><span>设置 Settings</span></div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="foot-name">Hnst</div>
+      <div class="foot-mail">2925537739@qq.com</div>
+    </div>
+  </aside>
+  <main class="main">
+    <section class="hero">
+      <div class="hero-eyebrow">Vol. III · No. 1010</div>
+      <h1 class="hero-title">A diary of <em>us</em>,<br>day by day.</h1>
+      <p class="hero-sub">记录每一次相遇、每一寸成长，以及那些只属于两个人的寻常日落。</p>
+      <p class="hero-date">2026.06.15 — MONDAY — SUMMER</p>
+    </section>
+
+    <section class="feature">
+      <div class="feature-left">
+        <div class="feature-label">Together Since</div>
+        <div class="feature-days">1,010<span class="unit">days</span></div>
+        <div class="feature-since">since <em>September 9, 2023</em></div>
+      </div>
+      <div class="feature-divider"></div>
+      <div class="feature-right">
+        <div class="feature-mile">90<small> days</small></div>
+        <div class="feature-mile-label">To Day 1,100</div>
+        <div class="feature-progress"><span></span></div>
+      </div>
+    </section>
+
+    <section class="stats-row">
+      <div class="stat"><div class="stat-label">Diaries</div><div class="stat-val">33<span class="small"> 篇</span></div><div class="stat-sub">记录的篇章</div></div>
+      <div class="stat"><div class="stat-label">Photographs</div><div class="stat-val">142<span class="small"> 张</span></div><div class="stat-sub">定格的瞬间</div></div>
+      <div class="stat"><div class="stat-label">Upcoming</div><div class="stat-val">02<span class="small"> 个</span></div><div class="stat-sub">重要的日子</div></div>
+    </section>
+
+    <div class="section-head">
+      <h2 class="section-title">Recent <em>entries</em></h2>
+      <span class="section-meta">— 06 entries shown</span>
+      <span class="section-link">View all →</span>
+    </div>
+
+    <div class="diary-grid">
+      <article class="diary-card">
+        <div class="card-cover"><img src="https://images.unsplash.com/photo-1529636798458-92182e662485?w=600&q=80" alt=""></div>
+        <div class="card-num">No. 043</div>
+        <h3 class="card-title">毕业照</h3>
+        <p class="card-excerpt">这一天终于来了，镜头定格的不只是我们，还有那些来不及说出口的青春。</p>
+        <div class="card-foot"><span class="card-cat">生活</span><span class="card-meta">Jun 5, 2026</span></div>
+      </article>
+      <article class="diary-card">
+        <div class="card-cover"><img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80" alt=""></div>
+        <div class="card-num">No. 042</div>
+        <h3 class="card-title">青岛之旅</h3>
+        <p class="card-excerpt">海风咸湿，啤酒微凉。和你走在栈桥上，第一次觉得世界可以这么慢。</p>
+        <div class="card-foot"><span class="card-cat">旅行</span><span class="card-meta">May 17, 2026</span></div>
+      </article>
+    </div>
+  </main>
+</div>
+<div class="preview-bar">✦ 这是 <b>极简画廊版</b> 预览 · V4 / 5</div>
+</body>
+</html>

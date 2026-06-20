@@ -1,4 +1,5 @@
 # Django
+.venv/
 *.pyc
 __pycache__/
 *.py[cod]
@@ -87,3 +88,6 @@ Thumbs.db
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Local assistant/debug permissions
+.claude/settings.local.json

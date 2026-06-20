@@ -1,38 +1,29 @@
-<!--
-注册页面
-新用户注册（简化版：无需邮箱）
--->
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Heart, UserPlus } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import { register } from '@/api/auth'
 import type { RegisterRequest } from '@/types'
-import { UserPlus } from 'lucide-vue-next'
 
 const router = useRouter()
 const userStore = useUserStore()
 const uiStore = useUiStore()
 
-const formData = ref<RegisterRequest>({
-  username: '',
-  password: ''
-})
-
+const formData = ref<RegisterRequest>({ username: '', password: '' })
 const confirmPassword = ref('')
 const isSubmitting = ref(false)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
-// 表单验证
-const validateForm = (): boolean => {
-  if (!formData.value.username) {
+const validateForm = () => {
+  if (!formData.value.username.trim()) {
     uiStore.showToast('请输入用户名', 'error')
     return false
   }
   if (formData.value.username.length < 3) {
-    uiStore.showToast('用户名至少需要3个字符', 'error')
+    uiStore.showToast('用户名至少需要 3 个字符', 'error')
     return false
   }
   if (!formData.value.password) {
@@ -40,7 +31,7 @@ const validateForm = (): boolean => {
     return false
   }
   if (formData.value.password.length < 6) {
-    uiStore.showToast('密码至少需要6个字符', 'error')
+    uiStore.showToast('密码至少需要 6 个字符', 'error')
     return false
   }
   if (formData.value.password !== confirmPassword.value) {
@@ -50,7 +41,6 @@ const validateForm = (): boolean => {
   return true
 }
 
-// 注册
 const handleRegister = async () => {
   if (!validateForm()) return
 
@@ -60,224 +50,155 @@ const handleRegister = async () => {
     if (response.success && response.data) {
       userStore.login(response.data.token, response.data.user)
       uiStore.showToast('注册成功', 'success')
-
-      // 跳转到首页
       router.push('/')
     }
   } catch (error: any) {
     console.error('Register error:', error)
     const data = error.response?.data
-    // 优先显示具体字段错误，再显示通用 message
-    const message = data?.errors?.username?.[0]
-      || data?.errors?.password?.[0]
-      || data?.message
-      || '注册失败'
-    uiStore.showToast(message, 'error')
+    uiStore.showToast(
+      data?.errors?.username?.[0] || data?.errors?.password?.[0] || data?.message || '注册失败',
+      'error'
+    )
   } finally {
     isSubmitting.value = false
   }
 }
-
-// 跳转到登录页
-const goToLogin = () => {
-  router.push('/login')
-}
 </script>
 
 <template>
-  <div class="register-page">
-    <div class="register-card">
-      <!-- Logo/标题 -->
-      <div class="register-header">
+  <main class="auth-page">
+    <section class="auth-card">
+      <div class="auth-header">
+        <span class="brand-mark"><Heart :size="20" fill="currentColor" /></span>
         <div class="logo">LoveZs</div>
-        <h1 class="title">创建账号</h1>
-        <p class="subtitle">加入我们，开始记录美好时光</p>
+        <p class="romance-kicker">First Scene</p>
+        <h1>创建账号</h1>
+        <p>创建一间私人的放映厅，开始收藏你们的美好时光。</p>
       </div>
 
-      <!-- 注册表单 -->
-      <form @submit.prevent="handleRegister" class="register-form">
+      <form class="auth-form" @submit.prevent="handleRegister">
         <div class="form-group">
-          <label for="username">用户名</label>
-          <input
-            id="username"
-            v-model="formData.username"
-            type="text"
-            class="form-input"
-            placeholder="请输入用户名（至少3个字符）"
-            autocomplete="username"
-            :disabled="isSubmitting"
-          />
+          <label class="form-label" for="username">用户名</label>
+          <input id="username" v-model="formData.username" type="text" class="form-input" placeholder="至少 3 个字符" autocomplete="username" :disabled="isSubmitting" />
         </div>
 
         <div class="form-group">
-          <label for="password">密码</label>
+          <label class="form-label" for="password">密码</label>
           <div class="password-input">
-            <input
-              id="password"
-              v-model="formData.password"
-              :type="showPassword ? 'text' : 'password'"
-              class="form-input"
-              placeholder="请输入密码（至少6个字符）"
-              autocomplete="new-password"
-              :disabled="isSubmitting"
-            />
-            <button
-              type="button"
-              class="toggle-password"
-              @click="showPassword = !showPassword"
-              tabindex="-1"
-            >
+            <input id="password" v-model="formData.password" :type="showPassword ? 'text' : 'password'" class="form-input" placeholder="至少 6 个字符" autocomplete="new-password" :disabled="isSubmitting" />
+            <button type="button" class="toggle-password" tabindex="-1" @click="showPassword = !showPassword">
               {{ showPassword ? '隐藏' : '显示' }}
             </button>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="confirmPassword">确认密码</label>
+          <label class="form-label" for="confirmPassword">确认密码</label>
           <div class="password-input">
-            <input
-              id="confirmPassword"
-              v-model="confirmPassword"
-              :type="showConfirmPassword ? 'text' : 'password'"
-              class="form-input"
-              placeholder="请再次输入密码"
-              autocomplete="new-password"
-              :disabled="isSubmitting"
-            />
-            <button
-              type="button"
-              class="toggle-password"
-              @click="showConfirmPassword = !showConfirmPassword"
-              tabindex="-1"
-            >
+            <input id="confirmPassword" v-model="confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" class="form-input" placeholder="请再次输入密码" autocomplete="new-password" :disabled="isSubmitting" />
+            <button type="button" class="toggle-password" tabindex="-1" @click="showConfirmPassword = !showConfirmPassword">
               {{ showConfirmPassword ? '隐藏' : '显示' }}
             </button>
           </div>
         </div>
 
-        <button
-          type="submit"
-          class="register-btn"
-          :disabled="isSubmitting"
-        >
+        <button type="submit" class="btn-primary auth-submit" :disabled="isSubmitting">
           <UserPlus :size="18" />
-          <span>{{ isSubmitting ? '注册中...' : '注册' }}</span>
+          {{ isSubmitting ? '注册中...' : '注册' }}
         </button>
       </form>
 
-      <!-- 登录链接 -->
-      <div class="login-link">
+      <p class="auth-link">
         已有账号？
-        <button type="button" @click="goToLogin" class="link-btn">
-          立即登录
-        </button>
-      </div>
-    </div>
-  </div>
+        <button type="button" @click="router.push('/login')">立即登录</button>
+      </p>
+    </section>
+  </main>
 </template>
 
 <style scoped>
-.register-page {
+.auth-page {
+  position: relative;
+  display: grid;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #fce4f4 0%, #ffe6ec 50%, #fff0f5 100%);
+  overflow: hidden;
 }
 
-.register-card {
-  width: 100%;
-  max-width: 400px;
-  background: #fff;
+.auth-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 18%, rgba(255, 154, 200, 0.18), transparent 26%),
+    radial-gradient(circle at 80% 24%, rgba(245, 200, 143, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(5, 5, 11, 0.2), rgba(42, 18, 42, 0.28));
+  animation: filmDrift 9s ease-in-out infinite alternate;
+}
+
+.auth-card {
+  position: relative;
+  width: min(100%, 420px);
+  padding: 2.4rem;
+  border: 1px solid rgba(245, 200, 143, 0.16);
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 60px rgba(217, 117, 154, 0.15);
-  padding: 2.5rem;
-  animation: fadeInUp 0.4s ease-out;
+  background:
+    linear-gradient(135deg, rgba(28, 18, 38, 0.92), rgba(7, 7, 13, 0.92)),
+    radial-gradient(circle at 50% 0%, rgba(245, 200, 143, 0.15), transparent 42%);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  backdrop-filter: blur(20px);
+  animation: revealIn 520ms ease both;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.register-header {
-  text-align: center;
+.auth-header {
   margin-bottom: 2rem;
+  text-align: center;
+}
+
+.brand-mark {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 0.8rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle at 36% 30%, #ffe2ef 0 20%, #ff7cb7 45%, #ee4fa1 100%);
+  box-shadow: var(--shadow-glow);
 }
 
 .logo {
-  font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--pink-500) 0%, var(--rose-500) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.75rem;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 900;
 }
 
-.title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 0.5rem;
+.auth-header h1 {
+  margin: 0.75rem 0 0.45rem;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
 }
 
-.subtitle {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
+.auth-header .romance-kicker {
+  justify-content: center;
+  margin-top: 0.8rem;
+}
+
+.auth-header p,
+.auth-link {
   margin: 0;
+  color: var(--ink-soft);
 }
 
-.register-form {
-  display: flex;
-  flex-direction: column;
+.auth-form {
+  display: grid;
   gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group > label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1.5px solid #f0d0e0;
-  border-radius: var(--radius-md);
-  font-size: 0.9375rem;
-  color: var(--text-primary);
-  background: #fff;
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--pink-400);
-  box-shadow: 0 0 0 3px rgba(217, 117, 154, 0.1);
-}
-
-.form-input:disabled {
-  background: #fafafa;
-  cursor: not-allowed;
 }
 
 .password-input {
   position: relative;
-  display: flex;
 }
 
 .password-input .form-input {
@@ -286,75 +207,32 @@ const goToLogin = () => {
 
 .toggle-password {
   position: absolute;
-  right: 0.75rem;
   top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--pink-500);
+  right: 0.65rem;
+  padding: 0.25rem 0.45rem;
+  border: 0;
+  color: var(--rose-bright);
+  background: transparent;
   font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  font-weight: 800;
+  transform: translateY(-50%);
 }
 
-.toggle-password:hover {
-  color: var(--rose-500);
-}
-
-.register-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+.auth-submit {
   width: 100%;
-  padding: 0.875rem;
-  margin-top: 0.5rem;
-  background: linear-gradient(135deg, var(--pink-500) 0%, var(--rose-500) 100%);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 8px 16px rgba(217, 117, 154, 0.24);
-  transition: transform var(--dur-fast), box-shadow var(--dur-base);
+  margin-top: 0.45rem;
 }
 
-.register-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 20px rgba(217, 117, 154, 0.3);
-}
-
-.register-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.register-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.login-link {
-  text-align: center;
+.auth-link {
   margin-top: 1.5rem;
+  text-align: center;
   font-size: 0.875rem;
-  color: var(--text-secondary);
 }
 
-.link-btn {
-  background: none;
-  border: none;
-  color: var(--pink-500);
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  padding: 0;
-  font-size: inherit;
-}
-
-.link-btn:hover {
-  color: var(--rose-500);
-  text-decoration: underline;
+.auth-link button {
+  border: 0;
+  color: var(--rose-bright);
+  background: transparent;
+  font-weight: 800;
 }
 </style>

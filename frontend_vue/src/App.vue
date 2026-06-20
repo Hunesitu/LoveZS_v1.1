@@ -8,111 +8,76 @@ const uiStore = useUiStore()
 <template>
   <RouterView />
 
-  <!-- 全局 Toast 通知 -->
   <Transition name="slide-up">
     <div v-if="uiStore.toast.show" class="toast" :class="uiStore.toast.type">
       <span>{{ uiStore.toast.message }}</span>
-      <button class="toast-close" @click="uiStore.hideToast">×</button>
+      <button class="toast-close" type="button" aria-label="关闭通知" @click="uiStore.hideToast">×</button>
     </div>
   </Transition>
 </template>
 
 <style>
-/* 全局样式重置 */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg-base);
-  color: var(--text-primary);
-}
-
-#app {
-  min-height: 100vh;
-}
-
-/* 全局 Toast 样式 */
 .toast {
   position: fixed;
-  bottom: 1.5rem;
   right: 1.5rem;
-  max-width: min(92vw, 420px);
-  color: var(--text-primary);
-  background: #fff7fa;
-  border: 1px solid transparent;
-  padding: 0.875rem 1rem;
-  border-radius: 0.875rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  bottom: 1.5rem;
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.85rem;
+  width: min(92vw, 420px);
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  background: rgba(18, 16, 36, 0.94);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px);
 }
 
 .toast.success {
-  border-color: #bde7d4;
-  background: #ecfaf3;
+  border-color: rgba(139, 230, 189, 0.45);
 }
 
 .toast.error {
-  border-color: #f7c6cf;
-  background: #fff1f3;
+  border-color: rgba(255, 127, 154, 0.55);
 }
 
 .toast.info {
-  border-color: #cfe4ff;
-  background: #eff6ff;
+  border-color: rgba(159, 200, 255, 0.45);
 }
 
 .toast.warning {
-  border-color: #f6dfb9;
-  background: #fff8ea;
+  border-color: rgba(245, 200, 143, 0.5);
 }
 
 .toast-close {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1.25rem;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 1.2rem;
   line-height: 1;
-  transition: color 0.2s;
 }
 
 .toast-close:hover {
-  color: var(--text-primary);
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
+  color: var(--rose-bright);
+  border-color: var(--line-strong);
 }
 
 @media (max-width: 768px) {
   .toast {
-    left: 1rem;
     right: 1rem;
     bottom: 1rem;
-    max-width: none;
+    left: 1rem;
+    width: auto;
   }
 }
 </style>

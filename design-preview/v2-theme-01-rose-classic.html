@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>方案一 · 灰玫瑰金典版 | LoveZS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            rose: {
+              50: '#fdf2f7',
+              100: '#fce7ef',
+              200: '#f8d1de',
+              300: '#f2abd',
+              400: '#e87fa0',
+              500: '#d95984',
+              600: '#c03d6a',
+              700: '#a12f56',
+            },
+            gold: {
+              100: '#fdf8ef',
+              200: '#f9f0d9',
+              300: '#f3e5be',
+              400: '#e8d498',
+              500: '#d4bc70',
+              600: '#b99f52',
+            },
+            warm: {
+              50: '#faf8f6',
+              100: '#f5f2ef',
+              200: '#e7e2dd',
+              300: '#d6cdc4',
+              400: '#a89a90',
+              500: '#8a7c72',
+              600: '#5c524a',
+              700: '#423b36',
+              800: '#2d2825',
+            }
+          },
+          fontFamily: {
+            serif: ['"Noto Serif SC"', 'Georgia', 'serif'],
+            sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            'paper': '0 4px 12px rgba(92, 82, 74, 0.08)',
+            'paper-lg': '0 8px 24px rgba(92, 82, 74, 0.1)',
+            'paper-xl': '0 16px 48px rgba(92, 82, 74, 0.12)',
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .paper {
+        background: linear-gradient(145deg, #ffffff 0%, #fffdfa 100%);
+        border: 1px solid rgba(231, 226, 221, 0.8);
+      }
+      .divider-gold {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(212, 188, 112, 0.3), transparent);
+      }
+      .hover-lift {
+        transition: all 350ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(217, 89, 132, 0.15);
+      }
+      .text-gradient {
+        background: linear-gradient(135deg, #d95984 0%, #a12f56 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans text-warm-800 relative overflow-x-hidden" style="background: radial-gradient(circle at 10% 0%, rgba(242, 171, 189, 0.15) 0%, transparent 35%), radial-gradient(circle at 100% 20%, rgba(243, 229, 190, 0.12) 0%, transparent 30%), #faf8f6;">
+
+  <!-- 纸纹理 -->
+  <div class="fixed inset-0 pointer-events-none opacity-40" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'2\' stitchTiles=\'stitch\'/%3E%3CfeColorMatrix values=\'0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.25 0 0 0 0.08 0\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E');"></div>
+
+  <main class="max-w-5xl mx-auto px-6 py-12 relative z-10">
+
+    <!-- 页面标题 -->
+    <div class="text-center mb-12">
+      <span class="text-gold-500 text-sm tracking-[0.3em] uppercase">Theme 01</span>
+      <h1 class="text-3xl font-serif font-semibold text-gradient mt-2 mb-3">灰玫瑰金典版</h1>
+      <p class="text-warm-500">经典浪漫 · 优雅克制 · 高级质感</p>
+      <div class="divider-gold w-32 mx-auto mt-4"></div>
+    </div>
+
+    <!-- 恋爱天数卡片 -->
+    <section class="mb-10">
+      <div class="paper rounded-2xl p-8 shadow-paper hover-lift">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-6">
+            <div class="text-center">
+              <p class="text-warm-400 text-xs tracking-widest uppercase mb-2">Together · 在一起</p>
+              <div class="flex items-baseline gap-3">
+                <span class="text-5xl font-serif font-light text-warm-800">1013</span>
+                <span class="text-lg text-rose-500 font-serif">天</span>
+              </div>
+              <p class="text-warm-400 text-sm mt-2 font-serif">自 2023.09.09 起</p>
+            </div>
+          </div>
+          <div class="h-14 w-px bg-warm-200"></div>
+          <div class="text-right pr-4">
+            <div class="flex items-baseline justify-end gap-1 mb-2">
+              <span class="text-2xl font-serif font-light text-gold-500">87</span>
+              <span class="text-sm text-gold-500 font-serif">天</span>
+            </div>
+            <p class="text-warm-400 text-xs font-serif">距 1100 天纪念</p>
+            <div class="w-36 h-1 bg-warm-100 rounded-full mt-3 overflow-hidden">
+              <div class="h-full rounded-full" style="width: 13%; background: linear-gradient(90deg, #e87fa0, #d95984);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 统计卡片 -->
+    <section class="grid grid-cols-3 gap-6 mb-10">
+      <div class="paper rounded-xl p-6 shadow-paper hover-lift">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-warm-400 text-xs tracking-wider uppercase mb-1">日记总数</p>
+            <p class="text-3xl font-serif font-light text-rose-500">38</p>
+            <p class="text-warm-400 text-xs mt-1 font-serif">篇记录</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center border border-rose-100">
+            <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper rounded-xl p-6 shadow-paper hover-lift">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-warm-400 text-xs tracking-wider uppercase mb-1">珍贵影像</p>
+            <p class="text-3xl font-serif font-light text-warm-600">142</p>
+            <p class="text-warm-400 text-xs mt-1 font-serif">张照片</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center border border-warm-200">
+            <svg class="w-5 h-5 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="paper rounded-xl p-6 shadow-paper hover-lift">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-warm-400 text-xs tracking-wider uppercase mb-1">即将到来</p>
+            <p class="text-3xl font-serif font-light text-gold-500">2</p>
+            <p class="text-warm-400 text-xs mt-1 font-serif">个重要日</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-gold-100 flex items-center justify-center border border-gold-200">
+            <svg class="w-5 h-5 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 日记卡片 -->
+    <section>
+      <div class="flex items-center gap-3 mb-6">
+        <h2 class="text-base font-medium text-warm-600 tracking-wide font-serif">最近日记</h2>
+        <div class="flex-1 divider-gold"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-6">
+        <div class="paper rounded-xl overflow-hidden shadow-paper hover-lift cursor-pointer">
+          <div class="h-36 relative" style="background: linear-gradient(135deg, #f8d1de 0%, #fce7ef 50%, #f9f0d9 100%);">
+            <div class="absolute top-3 right-3">
+              <span class="bg-white/90 px-2.5 py-1 rounded-full text-xs text-rose-600 font-medium border border-rose-100 font-serif">旅行</span>
+            </div>
+          </div>
+          <div class="p-5">
+            <h3 class="font-medium text-warm-800 mb-2 font-serif">一起看日落的海边时光</h3>
+            <p class="text-sm text-warm-500 line-clamp-2 mb-4 font-serif leading-relaxed">夕阳染红了整片天空，海风吹拂着脸庞，这一刻真的很幸福...</p>
+            <div class="flex items-center justify-between text-xs text-warm-400 font-serif">
+              <span>六月十五日</span>
+              <span>😊 开心</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="paper rounded-xl overflow-hidden shadow-paper hover-lift cursor-pointer">
+          <div class="h-36 relative" style="background: linear-gradient(135deg, #f2abd 0%, #fce7ef 50%, #e7e2dd 100%);">
+            <div class="absolute top-3 right-3">
+              <span class="bg-white/90 px-2.5 py-1 rounded-full text-xs text-rose-600 font-medium border border-rose-100 font-serif">美食</span>
+            </div>
+          </div>
+          <div class="p-5">
+            <h3 class="font-medium text-warm-800 mb-2 font-serif">第一次一起做蛋糕</h3>
+            <p class="text-sm text-warm-500 line-clamp-2 mb-4 font-serif leading-relaxed">虽然蛋糕烤得有点焦，奶油也抹得不平整，但和你一起在厨房忙碌...</p>
+            <div class="flex items-center justify-between text-xs text-warm-400 font-serif">
+              <span>六月十二日</span>
+              <span>😍 被爱</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="paper rounded-xl overflow-hidden shadow-paper hover-lift cursor-pointer">
+          <div class="h-36 relative" style="background: linear-gradient(135deg, #d6cdc4 0%, #e7e2dd 50%, #f9f0d9 100%);">
+            <div class="absolute top-3 right-3">
+              <span class="bg-white/90 px-2.5 py-1 rounded-full text-xs text-warm-600 font-medium border border-warm-200 font-serif">日常</span>
+            </div>
+          </div>
+          <div class="p-5">
+            <h3 class="font-medium text-warm-800 mb-2 font-serif">夜晚散步的星空</h3>
+            <p class="text-sm text-warm-500 line-clamp-2 mb-4 font-serif leading-relaxed">抬头看到了好久没见过的星空，星星在闪烁，就像你的眼睛...</p>
+            <div class="flex items-center justify-between text-xs text-warm-400 font-serif">
+              <span>六月十日</span>
+              <span>😌 平静</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 底部标签 -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 paper px-6 py-3 rounded-full shadow-paper-lg border border-warm-200">
+    <span class="text-sm font-medium text-rose-600 font-serif">方案一：灰玫瑰金典版</span>
+  </div>
+
+</body>
+</html>

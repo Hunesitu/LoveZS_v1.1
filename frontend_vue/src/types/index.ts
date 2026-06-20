@@ -1,15 +1,3 @@
-/**
- * LoveZs 类型定义
- * 从原 Express 后端 API 响应类型转换而来
- */
-
-// ========================================
-// 用户类型
-// ========================================
-
-/**
- * 用户模型
- */
 export interface User {
   id: number
   username: string
@@ -20,50 +8,28 @@ export interface User {
   date_joined: string
 }
 
-/**
- * 用户注册请求
- */
 export interface RegisterRequest {
   username: string
   password: string
 }
 
-/**
- * 用户登录请求
- */
 export interface LoginRequest {
   username: string
   password: string
 }
 
-/**
- * Token 响应
- */
 export interface TokenResponse {
   access: string
   refresh: string
 }
 
-/**
- * 认证响应
- */
 export interface AuthResponse {
   user: User
   token: TokenResponse
 }
 
-// ========================================
-// 模型类型
-// ========================================
-
-/**
- * 心情选项
- */
 export type Mood = 'happy' | 'sad' | 'excited' | 'calm' | 'angry' | 'tired' | 'loved' | 'grateful'
 
-/**
- * 心情选项显示文本
- */
 export const MOOD_LABELS: Record<Mood, string> = {
   happy: '开心',
   sad: '伤心',
@@ -71,42 +37,31 @@ export const MOOD_LABELS: Record<Mood, string> = {
   calm: '平静',
   angry: '生气',
   tired: '疲惫',
-  loved: '被爱',
-  grateful: '感恩'
+  loved: '相爱',
+  grateful: '感恩',
 }
 
-/**
- * 心情选项对应的 Emoji
- */
 export const MOOD_EMOJIS: Record<Mood, string> = {
   happy: '😊',
   sad: '😢',
   excited: '🤩',
   calm: '😌',
-  angry: '😠',
+  angry: '😤',
   tired: '😴',
-  loved: '🥰',
-  grateful: '🙏'
+  loved: '😍',
+  grateful: '🙏',
 }
 
-/**
- * 重要日类型
- */
 export type CountdownType = 'anniversary' | 'birthday' | 'event' | 'other'
-
-/**
- * 重要日方向
- */
 export type CountdownDirection = 'countup' | 'countdown'
-
-/**
- * 重复类型
- */
 export type RecurringType = 'yearly' | 'monthly' | 'daily'
 
-/**
- * 相册模型
- */
+export interface UserBasic {
+  id: number
+  username: string
+  email: string
+}
+
 export interface Album {
   id: number
   name: string
@@ -120,18 +75,6 @@ export interface Album {
   updated_at: string
 }
 
-/**
- * 用户基本信息
- */
-export interface UserBasic {
-  id: number
-  username: string
-  email: string
-}
-
-/**
- * 照片模型
- */
 export interface Photo {
   id: number
   filename: string
@@ -166,9 +109,6 @@ export interface Photo {
   updated_at: string
 }
 
-/**
- * 日记评论模型
- */
 export interface DiaryComment {
   id: number
   content: string
@@ -179,9 +119,6 @@ export interface DiaryComment {
   replies?: DiaryComment[]
 }
 
-/**
- * 日记模型
- */
 export interface Diary {
   id: number
   title: string
@@ -193,6 +130,7 @@ export interface Diary {
   is_public?: boolean
   is_pinned?: boolean
   attached_photos?: Photo[]
+  cover_media?: Photo | null
   word_count?: number
   comments?: DiaryComment[]
   created_by?: number | null
@@ -201,9 +139,6 @@ export interface Diary {
   updated_at: string
 }
 
-/**
- * 重要日模型
- */
 export interface Countdown {
   id: number
   title: string
@@ -225,22 +160,13 @@ export interface Countdown {
   updated_at: string
 }
 
-// ========================================
-// API 请求/响应类型
-// ========================================
-
-/**
- * API 响应基础格式
- */
 export interface ApiResponse<T = any> {
   success: boolean
   message?: string
   data?: T
+  errors?: Record<string, string[]>
 }
 
-/**
- * 分页数据格式
- */
 export interface PaginatedResponse<T> {
   count?: number
   next?: string | null
@@ -248,9 +174,6 @@ export interface PaginatedResponse<T> {
   results?: T
 }
 
-/**
- * 日记列表响应
- */
 export interface DiariesListResponse {
   diaries: Diary[]
   pagination?: {
@@ -261,9 +184,6 @@ export interface DiariesListResponse {
   }
 }
 
-/**
- * 照片列表响应
- */
 export interface PhotosListResponse {
   photos: Photo[]
   pagination?: {
@@ -274,9 +194,6 @@ export interface PhotosListResponse {
   }
 }
 
-/**
- * 重要日列表响应
- */
 export interface CountdownsListResponse {
   countdowns: Countdown[]
   pagination?: {
@@ -287,28 +204,15 @@ export interface CountdownsListResponse {
   }
 }
 
-/**
- * 相册列表响应
- */
 export interface AlbumsListResponse {
   albums: Album[]
 }
 
-/**
- * 元数据响应
- */
 export interface MetadataResponse {
   categories?: string[]
   tags?: string[]
 }
 
-// ========================================
-// 创建/更新请求类型
-// ========================================
-
-/**
- * 创建日记请求
- */
 export interface CreateDiaryRequest {
   title: string
   content: string
@@ -319,24 +223,14 @@ export interface CreateDiaryRequest {
   photo_ids?: number[]
 }
 
-/**
- * 更新日记请求
- */
-export interface UpdateDiaryRequest extends Partial<CreateDiaryRequest> {
-}
+export interface UpdateDiaryRequest extends Partial<CreateDiaryRequest> {}
 
-/**
- * 创建相册请求
- */
 export interface CreateAlbumRequest {
   name: string
   description?: string
   cover_photo?: string
 }
 
-/**
- * 创建重要日请求
- */
 export interface CreateCountdownRequest {
   title: string
   description?: string
@@ -349,13 +243,6 @@ export interface CreateCountdownRequest {
   recurring_day?: number
 }
 
-// ========================================
-// 表单类型
-// ========================================
-
-/**
- * 日记表单数据
- */
 export interface DiaryFormData {
   title: string
   content: string
@@ -364,9 +251,6 @@ export interface DiaryFormData {
   date: string
 }
 
-/**
- * 重要日表单数据
- */
 export interface CountdownFormData {
   title: string
   description: string
@@ -376,30 +260,17 @@ export interface CountdownFormData {
   recurring_type: RecurringType | ''
 }
 
-// ========================================
-// UI状态类型
-// ========================================
-
-/**
- * 加载状态
- */
 export interface LoadingState {
   isLoading: boolean
   error: string | null
 }
 
-/**
- * 分页参数
- */
 export interface PaginationParams {
   page?: number
   page_size?: number
   limit?: number
 }
 
-/**
- * 过滤参数
- */
 export interface FilterParams {
   category?: string
   mood?: Mood
@@ -408,24 +279,10 @@ export interface FilterParams {
   search?: string
 }
 
-/**
- * 日记查询参数
- */
-export interface DiaryQueryParams extends PaginationParams, FilterParams {
-}
+export interface DiaryQueryParams extends PaginationParams, FilterParams {}
 
-// ========================================
-// 通知消息类型
-// ========================================
-
-/**
- * 通知消息类型
- */
 export type NotificationType = 'diary_comment' | 'diary_created' | 'diary_like'
 
-/**
- * 通知消息模型
- */
 export interface Notification {
   id: number
   type: NotificationType
@@ -439,9 +296,6 @@ export interface Notification {
   created_at: string
 }
 
-/**
- * 通知列表响应
- */
 export interface NotificationsListResponse {
   notifications: Notification[]
   unread_count: number

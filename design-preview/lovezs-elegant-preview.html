@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LoveZs · 优雅浪漫版预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+SC:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ========================================
+     设计系统 · 暖象牙 × 灰玫瑰 × 柔金
+     ======================================== */
+  :root {
+    /* 背景层 */
+    --bg-base: #fbf7f2;        /* 暖象牙 */
+    --bg-elevated: #fffdf9;    /* 卡片底 */
+    --bg-soft: #f5ede4;        /* 次级背景 */
+
+    /* 主文字 */
+    --ink-900: #2c2320;        /* 深咖墨 */
+    --ink-700: #574842;        /* 中咖 */
+    --ink-500: #8a786f;        /* 灰咖（次要文字）*/
+    --ink-300: #b8a99f;        /* 浅咖 */
+
+    /* 玫瑰色系（克制的灰玫瑰，非泡泡粉）*/
+    --rose-50: #f7ebed;
+    --rose-100: #efdcdf;
+    --rose-300: #d4a3ac;
+    --rose-400: #c4889a;       /* 主玫瑰 */
+    --rose-600: #9c5e72;       /* 深酒玫 */
+    --rose-700: #7d485a;
+
+    /* 柔金（点缀/高级感）*/
+    --gold-300: #d9bf8d;
+    --gold-400: #c5a571;
+    --gold-500: #a8884f;
+
+    /* 描边 */
+    --line-faint: #ece3d8;
+    --line-soft: #e2d5c6;
+
+    /* 阴影：分层柔阴影，避免硬边 */
+    --shadow-xs: 0 1px 2px rgba(90, 60, 45, 0.04);
+    --shadow-sm: 0 2px 8px rgba(90, 60, 45, 0.05), 0 1px 2px rgba(90,60,45,0.04);
+    --shadow-md: 0 8px 24px -8px rgba(120, 70, 60, 0.10), 0 2px 6px rgba(120,70,60,0.04);
+    --shadow-lg: 0 24px 48px -16px rgba(120, 70, 60, 0.14), 0 4px 12px rgba(120,70,60,0.05);
+
+    --radius: 14px;
+    --radius-lg: 20px;
+
+    --serif: 'Cormorant Garamond', 'Noto Serif SC', 'Songti SC', serif;
+    --serif-cn: 'Noto Serif SC', 'Songti SC', 'Cormorant Garamond', serif;
+    --sans: 'Inter', -apple-system, 'Segoe UI', 'PingFang SC', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 0%, rgba(214, 163, 172, 0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 8%, rgba(217, 191, 141, 0.14) 0%, transparent 55%),
+      var(--bg-base);
+    color: var(--ink-900);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 细腻纸纹（提升高级感）*/
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.25 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .layout {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ========================================
+     侧边栏
+     ======================================== */
+  .sidebar {
+    width: 256px;
+    flex-shrink: 0;
+    background: rgba(255, 253, 249, 0.72);
+    backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1);
+    border-right: 1px solid var(--line-faint);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1.1rem;
+    z-index: 10;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0 0.6rem 2rem;
+    border-bottom: 1px solid var(--line-faint);
+  }
+  .brand-mark {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.7rem;
+    font-weight: 500;
+    color: var(--rose-600);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .brand-sub {
+    font-size: 0.62rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-500);
+    font-weight: 500;
+  }
+
+  .nav {
+    flex: 1;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    color: var(--ink-500);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s, background 0.2s;
+  }
+  .nav-item:hover { color: var(--ink-900); background: rgba(245, 237, 228, 0.6); }
+  .nav-item.active {
+    color: var(--rose-600);
+    background: linear-gradient(90deg, rgba(239, 220, 223, 0.55), rgba(239,220,223,0));
+  }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -1.1rem; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 22px;
+    background: linear-gradient(180deg, var(--rose-400), var(--gold-400));
+    border-radius: 0 3px 3px 0;
+  }
+  .nav-icon { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 1.6; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--rose-600);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 600;
+    min-width: 18px; height: 18px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 5px;
+  }
+
+  .sidebar-foot {
+    padding: 1.25rem 0.6rem 0;
+    border-top: 1px solid var(--line-faint);
+    display: flex; align-items: center; gap: 0.7rem;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--rose-400), var(--rose-600));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.05rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+  }
+  .foot-name { font-size: 0.82rem; font-weight: 600; color: var(--ink-900); }
+  .foot-mail { font-size: 0.7rem; color: var(--ink-500); margin-top: 1px; }
+
+  /* ========================================
+     主内容
+     ======================================== */
+  .main {
+    flex: 1;
+    margin-left: 256px;
+    padding: 3rem 3.5rem 4rem;
+    max-width: 1080px;
+  }
+
+  /* —— Hero 欢迎区 —— */
+  .hero {
+    margin-bottom: 3rem;
+  }
+  .hero-eyebrow {
+    display: flex; align-items: center; gap: 0.8rem;
+    margin-bottom: 0.9rem;
+  }
+  .eyebrow-line {
+    width: 36px; height: 1px;
+    background: linear-gradient(90deg, var(--gold-400), transparent);
+  }
+  .eyebrow-text {
+    font-size: 0.7rem;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--gold-500);
+    font-weight: 500;
+  }
+  .hero-title {
+    font-family: var(--serif-cn);
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--ink-900);
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+  .hero-title em {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    color: var(--rose-600);
+  }
+  .hero-date {
+    margin-top: 0.7rem;
+    font-size: 0.9rem;
+    color: var(--ink-500);
+    letter-spacing: 0.04em;
+  }
+
+  /* —— 主特色卡：恋爱时光 —— */
+  .feature {
+    background:
+      linear-gradient(135deg, rgba(255,253,249,0.9), rgba(247,235,229,0.7)),
+      radial-gradient(circle at 85% 20%, rgba(196,136,154,0.18), transparent 55%);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg);
+    padding: 2.2rem 2.4rem;
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+  }
+  .feature::after {
+    content: '';
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(217,191,141,0.22), transparent 70%);
+    pointer-events: none;
+  }
+  .feature-left { flex: 1; }
+  .feature-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold-500);
+    font-weight: 500;
+    margin-bottom: 0.6rem;
+  }
+  .feature-days {
+    font-family: var(--serif);
+    font-size: 5.2rem;
+    font-weight: 500;
+    line-height: 0.95;
+    color: var(--ink-900);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .feature-days .unit {
+    font-family: var(--serif-cn);
+    font-size: 1.2rem;
+    color: var(--ink-500);
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .feature-since {
+    margin-top: 0.8rem;
+    font-size: 0.85rem;
+    color: var(--ink-500);
+  }
+  .feature-since strong {
+    color: var(--rose-600);
+    font-weight: 500;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1rem;
+  }
+  .feature-divider {
+    width: 1px;
+    height: 90px;
+    background: linear-gradient(180deg, transparent, var(--line-soft), transparent);
+  }
+  .feature-right {
+    text-align: right;
+  }
+  .feature-mile {
+    font-family: var(--serif);
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--rose-600);
+    line-height: 1;
+  }
+  .feature-mile small {
+    font-family: var(--serif-cn);
+    font-size: 0.9rem;
+    color: var(--ink-500);
+    font-weight: 400;
+  }
+  .feature-mile-label {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--ink-500);
+    letter-spacing: 0.04em;
+  }
+  .feature-progress {
+    width: 160px;
+    height: 3px;
+    background: var(--line-soft);
+    border-radius: 3px;
+    margin-top: 0.7rem;
+    overflow: hidden;
+    margin-left: auto;
+  }
+  .feature-progress > span {
+    display: block;
+    height: 100%;
+    width: 82%;
+    background: linear-gradient(90deg, var(--rose-400), var(--gold-400));
+    border-radius: 3px;
+  }
+
+  /* —— 次级统计 —— */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  .stat {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius);
+    padding: 1.4rem 1.5rem;
+    box-shadow: var(--shadow-xs);
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  }
+  .stat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--line-soft);
+  }
+  .stat-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.8rem;
+  }
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--ink-500);
+    letter-spacing: 0.06em;
+  }
+  .stat-ico {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--rose-50);
+    color: var(--rose-600);
+  }
+  .stat-ico svg { width: 16px; height: 16px; stroke-width: 1.6; }
+  .stat-val {
+    font-family: var(--serif);
+    font-size: 2.2rem;
+    font-weight: 500;
+    color: var(--ink-900);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .stat-val .small { font-size: 1rem; color: var(--ink-500); font-family: var(--sans); font-weight: 400; margin-left: 0.2rem; }
+  .stat-sub { margin-top: 0.4rem; font-size: 0.75rem; color: var(--ink-500); }
+
+  /* —— 区块标题 —— */
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 1.4rem;
+  }
+  .section-title {
+    font-family: var(--serif-cn);
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--ink-900);
+    display: flex; align-items: baseline; gap: 0.6rem;
+  }
+  .section-title .en {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.1rem;
+    color: var(--rose-400);
+  }
+  .section-link {
+    font-size: 0.82rem;
+    color: var(--rose-600);
+    font-weight: 500;
+    display: flex; align-items: center; gap: 0.3rem;
+    cursor: pointer;
+  }
+  .section-link svg { width: 14px; height: 14px; }
+
+  /* —— 日记卡网格 —— */
+  .diary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  .diary-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-xs);
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(.2,.7,.3,1), box-shadow 0.3s, border-color 0.3s;
+    display: flex;
+    flex-direction: column;
+  }
+  .diary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--rose-300);
+  }
+  .card-cover {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: var(--bg-soft);
+  }
+  .card-cover img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(.2,.7,.3,1);
+  }
+  .diary-card:hover .card-cover img { transform: scale(1.05); }
+  .card-cover::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(44,35,32,0.12));
+    pointer-events: none;
+  }
+  .mood-chip {
+    position: absolute;
+    top: 0.8rem; left: 0.8rem;
+    background: rgba(255,253,249,0.88);
+    backdrop-filter: blur(6px);
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.7rem;
+    color: var(--ink-700);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .mood-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rose-400); }
+
+  .card-body { padding: 1.1rem 1.2rem 1.2rem; flex: 1; display: flex; flex-direction: column; }
+  .card-title {
+    font-family: var(--serif-cn);
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: var(--ink-900);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.01em;
+  }
+  .card-excerpt {
+    font-size: 0.84rem;
+    color: var(--ink-500);
+    line-height: 1.65;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.9rem;
+    flex: 1;
+  }
+  .card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--line-faint);
+  }
+  .card-cat {
+    font-size: 0.7rem;
+    color: var(--rose-600);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .card-meta {
+    font-size: 0.74rem;
+    color: var(--ink-300);
+    font-family: var(--serif);
+    font-style: italic;
+  }
+
+  /* —— 写日记 CTA —— */
+  .write-cta {
+    margin-top: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+    border: 1px dashed var(--line-soft);
+    border-radius: var(--radius);
+    color: var(--ink-500);
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    font-size: 0.9rem;
+  }
+  .write-cta:hover {
+    border-color: var(--rose-400);
+    color: var(--rose-600);
+    background: rgba(247,235,229,0.4);
+  }
+  .write-cta svg { width: 18px; height: 18px; }
+
+  /* —— 预览页头部说明条 —— */
+  .preview-bar {
+    position: fixed;
+    bottom: 1.2rem; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(44,35,32,0.92);
+    color: #fbf7f2;
+    padding: 0.6rem 1.4rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(217,191,141,0.3);
+  }
+  .preview-bar b { color: var(--gold-300); font-weight: 500; }
+
+  @media (max-width: 860px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; padding: 2rem 1.25rem 5rem; }
+    .feature { flex-direction: column; gap: 1.5rem; text-align: center; }
+    .feature-divider { display: none; }
+    .feature-right { text-align: center; }
+    .feature-progress { margin: 0.7rem auto 0; }
+    .stats-row { grid-template-columns: 1fr; }
+    .diary-grid { grid-template-columns: 1fr; }
+    .hero-title { font-size: 1.9rem; }
+    .feature-days { font-size: 4rem; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ============ 侧边栏 ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">Love<span style="color:var(--gold-500)">·</span>Zs</span>
+      <span class="brand-sub">est. 2023</span>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1h-5v-7h-6v7H4a1 1 0 01-1-1V9.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>首页</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5a2 2 0 012-2h7v18H6a2 2 0 01-2-2V5zM13 3h5a2 2 0 012 2v14a2 2 0 01-2 2h-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>日记</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4" stroke-linecap="round"/></svg>
+        <span>重要日</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 01-3.4 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>消息</span>
+        <span class="nav-badge">3</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 003.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H8a1.65 1.65 0 001-1.51V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V8a1.65 1.65 0 001.51 1H22a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>设置</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="avatar">H</div>
+      <div>
+        <div class="foot-name">Hnst</div>
+        <div class="foot-mail">2925537739@qq.com</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ 主内容 ============ -->
+  <main class="main">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-line"></span>
+        <span class="eyebrow-text">Our Story · 我们的故事</span>
+      </div>
+      <h1 class="hero-title">愿与你 <em>共度</em> 每一个寻常日落</h1>
+      <p class="hero-date">2026 年 6 月 15 日 · 星期一 · 夏日晴</p>
+    </section>
+
+    <!-- 主特色卡：恋爱时光 -->
+    <section class="feature">
+      <div class="feature-left">
+        <div class="feature-label">在一起 · Together</div>
+        <div class="feature-days">1,010<span class="unit">天</span></div>
+        <div class="feature-since">自 <strong>2023.09.09</strong> 起 · 第 1010 天</div>
+      </div>
+      <div class="feature-divider"></div>
+      <div class="feature-right">
+        <div class="feature-mile">90<small> 天</small></div>
+        <div class="feature-mile-label">距下一个 1100 天</div>
+        <div class="feature-progress"><span></span></div>
+      </div>
+    </section>
+
+    <!-- 次级统计 -->
+    <section class="stats-row">
+      <div class="stat">
+        <div class="stat-top">
+          <span class="stat-label">日记篇数</span>
+          <span class="stat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5zM8 7h8M8 11h8M8 15h5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+        <div class="stat-val">33<span class="small">篇</span></div>
+        <div class="stat-sub">记录每一个瞬间</div>
+      </div>
+      <div class="stat">
+        <div class="stat-top">
+          <span class="stat-label">珍贵影像</span>
+          <span class="stat-ico" style="background:#f0e8d8;color:var(--gold-500)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5L5 19" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+        <div class="stat-val">142<span class="small">张</span></div>
+        <div class="stat-sub">定格的温柔时光</div>
+      </div>
+      <div class="stat">
+        <div class="stat-top">
+          <span class="stat-label">即将到来</span>
+          <span class="stat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4M12 13v4M10 15h4" stroke-linecap="round"/></svg></span>
+        </div>
+        <div class="stat-val">2<span class="small">个</span></div>
+        <div class="stat-sub">重要的日子</div>
+      </div>
+    </section>
+
+    <!-- 最近日记 -->
+    <div class="section-head">
+      <h2 class="section-title">最近日记 <span class="en">Recent</span></h2>
+      <span class="section-link">查看全部 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </div>
+
+    <div class="diary-grid">
+      <article class="diary-card">
+        <div class="card-cover">
+          <img src="https://images.unsplash.com/photo-1529636798458-92182e662485?w=600&q=80" alt="">
+          <div class="mood-chip"><span class="mood-dot"></span>开心</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">毕业照</h3>
+          <p class="card-excerpt">这一天终于来了，镜头定格的不只是我们，还有那些来不及说出口的青春。</p>
+          <div class="card-foot">
+            <span class="card-cat">生活</span>
+            <span class="card-meta">Jun 5 · Hnst</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="diary-card">
+        <div class="card-cover">
+          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80" alt="">
+          <div class="mood-chip"><span class="mood-dot"></span>开心</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">青岛之旅</h3>
+          <p class="card-excerpt">海风咸湿，啤酒微凉。和你走在栈桥上，第一次觉得世界可以这么慢。</p>
+          <div class="card-foot">
+            <span class="card-cat">旅行</span>
+            <span class="card-meta">May 17 · Hnst</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="diary-card">
+        <div class="card-cover">
+          <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600&q=80" alt="">
+          <div class="mood-chip"><span class="mood-dot"></span>开心</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">小草公园</h3>
+          <p class="card-excerpt">今天美得不可方物，阳光洒在你发梢的样子，我想我会记很久很久。</p>
+          <div class="card-foot">
+            <span class="card-cat">旅行</span>
+            <span class="card-meta">Apr 25 · Hnst</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="diary-card">
+        <div class="card-cover">
+          <img src="https://images.unsplash.com/photo-1518621736915-f3b1c41bfd00?w=600&q=80" alt="">
+          <div class="mood-chip"><span class="mood-dot" style="background:var(--gold-400)"></span>被爱</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">我们的甜蜜合照</h3>
+          <p class="card-excerpt">把这些瞬间都收好，等我们都老了，再一张张翻给你看。</p>
+          <div class="card-foot">
+            <span class="card-cat">生活</span>
+            <span class="card-meta">Feb 17 · Hnst</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="write-cta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      <span>写下今天的我们</span>
+    </div>
+
+  </main>
+</div>
+
+<div class="preview-bar">✦ 这是 <b>优雅浪漫版</b> 预览 · 若满意将应用到 LoveZs 全站</div>
+</body>
+</html>

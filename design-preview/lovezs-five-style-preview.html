@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoveZS Five UI Styles</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@600;700&display=swap");
+
+      :root {
+        --bg: #fff7fa;
+        --bg-2: #f8ecee;
+        --surface: rgba(255, 255, 255, 0.86);
+        --surface-2: rgba(255, 255, 255, 0.68);
+        --text: #28171f;
+        --muted: #765a67;
+        --subtle: #9a7485;
+        --line: rgba(136, 74, 98, 0.16);
+        --line-strong: rgba(180, 42, 92, 0.25);
+        --primary: #ba2f6b;
+        --primary-2: #e76598;
+        --accent: #b88648;
+        --accent-2: #7c927e;
+        --stat-1: linear-gradient(135deg, #b72868, #df5b91);
+        --stat-2: linear-gradient(135deg, #4c1830, #8f3f66);
+        --stat-3: linear-gradient(135deg, #778d78, #bd8b46);
+        --cover-1: linear-gradient(135deg, #edb8ca, #fff0dd 48%, #c86e8a);
+        --cover-2: linear-gradient(135deg, #e4d5ea, #fff6ec 50%, #c49b58);
+        --cover-3: linear-gradient(135deg, #ffd8c3, #fff8f4 44%, #819981);
+        --shadow: 0 22px 54px rgba(112, 42, 69, 0.12);
+        --shadow-hover: 0 28px 64px rgba(112, 42, 69, 0.18);
+        --radius: 16px;
+        --radius-sm: 10px;
+        --font-display: "Noto Serif SC", "Cormorant Garamond", serif;
+        --font-body: Inter, "Microsoft YaHei", sans-serif;
+      }
+
+      body[data-theme="cream"] {
+        --bg: #fffaf3;
+        --bg-2: #f6eadc;
+        --surface: rgba(255, 252, 245, 0.9);
+        --surface-2: rgba(255, 250, 240, 0.76);
+        --text: #2f241d;
+        --muted: #765f50;
+        --subtle: #9a806e;
+        --line: rgba(134, 96, 62, 0.18);
+        --line-strong: rgba(169, 106, 55, 0.3);
+        --primary: #a75c43;
+        --primary-2: #dc8f76;
+        --accent: #b89352;
+        --accent-2: #8c8f66;
+        --stat-1: linear-gradient(135deg, #b45d52, #df8d78);
+        --stat-2: linear-gradient(135deg, #5b382a, #9b6753);
+        --stat-3: linear-gradient(135deg, #8a8b62, #c39b56);
+        --cover-1: linear-gradient(135deg, #edd1be, #fff8ec 48%, #cf8772);
+        --cover-2: linear-gradient(135deg, #e7dac6, #fffaf0 46%, #bd975e);
+        --cover-3: linear-gradient(135deg, #f6cdb9, #fff7eb 45%, #89906b);
+      }
+
+      body[data-theme="velvet"] {
+        --bg: #160d15;
+        --bg-2: #2a1321;
+        --surface: rgba(43, 24, 36, 0.82);
+        --surface-2: rgba(58, 31, 48, 0.72);
+        --text: #fff4f7;
+        --muted: #d8b9c5;
+        --subtle: #ad8798;
+        --line: rgba(255, 221, 232, 0.14);
+        --line-strong: rgba(235, 158, 188, 0.3);
+        --primary: #f171a6;
+        --primary-2: #b83d78;
+        --accent: #d8a755;
+        --accent-2: #90a78f;
+        --stat-1: linear-gradient(135deg, #b93474, #f06fa5);
+        --stat-2: linear-gradient(135deg, #32101f, #713151);
+        --stat-3: linear-gradient(135deg, #667c70, #c39b56);
+        --cover-1: linear-gradient(135deg, #4f1d32, #aa5577 48%, #e2b3c2);
+        --cover-2: linear-gradient(135deg, #2b1f38, #6f4d68 45%, #d4a75a);
+        --cover-3: linear-gradient(135deg, #41201e, #7a6852 45%, #87a087);
+        --shadow: 0 24px 58px rgba(0, 0, 0, 0.34);
+        --shadow-hover: 0 30px 70px rgba(0, 0, 0, 0.42);
+      }
+
+      body[data-theme="film"] {
+        --bg: #f8f3ec;
+        --bg-2: #eae1d4;
+        --surface: rgba(255, 254, 250, 0.9);
+        --surface-2: rgba(255, 251, 244, 0.78);
+        --text: #241f1c;
+        --muted: #665a52;
+        --subtle: #928176;
+        --line: rgba(78, 61, 49, 0.16);
+        --line-strong: rgba(132, 77, 58, 0.28);
+        --primary: #a14056;
+        --primary-2: #c16c72;
+        --accent: #996f3e;
+        --accent-2: #5f7a77;
+        --stat-1: linear-gradient(135deg, #9f4057, #cf716f);
+        --stat-2: linear-gradient(135deg, #342824, #7a5145);
+        --stat-3: linear-gradient(135deg, #5f7a77, #ad8249);
+        --cover-1: linear-gradient(135deg, #d9a6a9, #fff3df 52%, #8d4051);
+        --cover-2: linear-gradient(135deg, #d2c4b7, #fff7e8 48%, #9f7542);
+        --cover-3: linear-gradient(135deg, #e7b99f, #f7eee4 45%, #657d78);
+        --radius: 12px;
+        --radius-sm: 8px;
+      }
+
+      body[data-theme="garden"] {
+        --bg: #f6fbf7;
+        --bg-2: #e7f1e8;
+        --surface: rgba(255, 255, 255, 0.88);
+        --surface-2: rgba(255, 255, 255, 0.72);
+        --text: #17251e;
+        --muted: #51665a;
+        --subtle: #738679;
+        --line: rgba(65, 112, 86, 0.16);
+        --line-strong: rgba(63, 126, 92, 0.28);
+        --primary: #c9567c;
+        --primary-2: #ef9ab5;
+        --accent: #6b9275;
+        --accent-2: #c69c57;
+        --stat-1: linear-gradient(135deg, #c9567c, #ef9ab5);
+        --stat-2: linear-gradient(135deg, #2d5d47, #6d9276);
+        --stat-3: linear-gradient(135deg, #7e9d78, #c6a056);
+        --cover-1: linear-gradient(135deg, #f4bfd0, #fff7ed 48%, #98ba9c);
+        --cover-2: linear-gradient(135deg, #d5e8db, #fff7ed 47%, #c9a965);
+        --cover-3: linear-gradient(135deg, #ffd1c5, #f7fff8 45%, #6b9275);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+        background:
+          linear-gradient(115deg, color-mix(in srgb, var(--bg) 82%, white), var(--bg-2)),
+          var(--bg);
+        color: var(--text);
+        font-family: var(--font-body);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image:
+          linear-gradient(color-mix(in srgb, var(--primary) 12%, transparent) 1px, transparent 1px),
+          linear-gradient(90deg, color-mix(in srgb, var(--accent) 10%, transparent) 1px, transparent 1px);
+        background-size: 74px 74px;
+        mask-image: linear-gradient(to bottom, black, transparent 82%);
+      }
+
+      a,
+      button {
+        color: inherit;
+        font: inherit;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .style-switcher {
+        position: sticky;
+        top: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        backdrop-filter: blur(18px);
+      }
+
+      .switcher-label {
+        flex: 0 0 auto;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .style-btn {
+        flex: 0 0 auto;
+        min-height: 34px;
+        padding: 0 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 800;
+        transition: background 180ms, border-color 180ms, color 180ms, transform 120ms;
+      }
+
+      .style-btn:hover,
+      .style-btn.active {
+        border-color: var(--line-strong);
+        background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+        color: var(--primary);
+      }
+
+      .layout {
+        display: flex;
+        min-height: calc(100vh - 55px);
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 55px;
+        align-self: flex-start;
+        display: flex;
+        width: 248px;
+        height: calc(100vh - 55px);
+        flex-direction: column;
+        border-right: 1px solid var(--line);
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
+        box-shadow: 8px 0 30px rgba(80, 38, 52, 0.06);
+        backdrop-filter: blur(22px);
+      }
+
+      .sidebar-header {
+        padding: 24px 22px 22px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .logo,
+      .nav-item,
+      .user-info,
+      .stat-content,
+      .action-card,
+      .section-header,
+      .card-title-row,
+      .card-footer {
+        display: flex;
+        align-items: center;
+      }
+
+      .logo {
+        gap: 10px;
+      }
+
+      .logo-icon,
+      .action-icon,
+      .stat-icon-wrap,
+      .user-avatar,
+      .diary-mood {
+        display: grid;
+        place-items: center;
+      }
+
+      .logo-icon {
+        width: 38px;
+        height: 38px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+        color: var(--primary);
+        box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 18%, transparent);
+      }
+
+      .logo-name {
+        display: block;
+        font-family: var(--font-display);
+        font-size: 21px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .logo-desc {
+        display: block;
+        margin-top: 4px;
+        color: var(--subtle);
+        font-size: 12px;
+      }
+
+      .sidebar-nav {
+        flex: 1;
+        padding: 16px 12px;
+      }
+
+      .nav-list {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .nav-item {
+        position: relative;
+        min-height: 46px;
+        gap: 12px;
+        padding: 0 14px;
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 700;
+        transition: background 180ms, border-color 180ms, color 180ms, transform 120ms;
+      }
+
+      .nav-item:hover {
+        border-color: var(--line);
+        background: var(--surface-2);
+        color: var(--text);
+        transform: translateX(2px);
+      }
+
+      .nav-item.active {
+        border-color: var(--line-strong);
+        background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+        color: var(--primary);
+      }
+
+      .nav-item.active::before {
+        content: "";
+        position: absolute;
+        inset: 9px auto 9px 0;
+        width: 3px;
+        border-radius: 999px;
+        background: linear-gradient(var(--primary), var(--accent));
+      }
+
+      .active-indicator {
+        margin-left: auto;
+      }
+
+      .sidebar-footer {
+        padding: 16px;
+        border-top: 1px solid var(--line);
+      }
+
+      .user-info {
+        gap: 11px;
+        min-height: 58px;
+        padding: 9px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+      }
+
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-sm);
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: white;
+      }
+
+      .user-name,
+      .user-email,
+      .welcome-kicker,
+      .welcome-title,
+      .welcome-date,
+      .stat-label,
+      .stat-value,
+      .stat-subtitle,
+      .section-title,
+      .action-title,
+      .action-subtitle,
+      .diary-title,
+      .diary-preview {
+        margin: 0;
+      }
+
+      .user-name {
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .user-email {
+        margin-top: 2px;
+        color: var(--subtle);
+        font-size: 12px;
+      }
+
+      .main-content {
+        flex: 1;
+      }
+
+      .page-content {
+        width: min(1240px, 100%);
+        margin: 0 auto;
+        padding: 30px;
+      }
+
+      .welcome-section,
+      .card,
+      .stat-card,
+      .diary-card {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .welcome-section {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 18px;
+        padding: 24px 26px;
+        border-radius: var(--radius);
+      }
+
+      .welcome-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(120deg, color-mix(in srgb, var(--primary) 15%, transparent), transparent 42%),
+          linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-2) 12%, transparent));
+      }
+
+      .welcome-section > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .welcome-kicker {
+        margin-bottom: 8px;
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .welcome-title {
+        max-width: 850px;
+        font-family: var(--font-display);
+        font-size: clamp(28px, 3vw, 42px);
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 1.16;
+      }
+
+      .welcome-date {
+        max-width: 750px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .stats-grid,
+      .actions-grid,
+      .diary-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .stats-grid,
+      .actions-grid,
+      .diary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .stats-grid,
+      .card {
+        margin-bottom: 18px;
+      }
+
+      .stat-card {
+        min-height: 132px;
+        overflow: hidden;
+        border-radius: var(--radius);
+        padding: 18px;
+        color: white;
+        transition: transform 180ms, box-shadow 180ms;
+      }
+
+      .stat-card:hover,
+      .diary-card:hover,
+      .action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+      }
+
+      .stat-card:nth-child(1) {
+        background: var(--stat-1);
+      }
+
+      .stat-card:nth-child(2) {
+        background: var(--stat-2);
+      }
+
+      .stat-card:nth-child(3) {
+        background: var(--stat-3);
+      }
+
+      .stat-content {
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      .stat-label {
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .stat-value {
+        margin-top: 10px;
+        font-size: 42px;
+        font-weight: 900;
+        letter-spacing: 0;
+        line-height: 1;
+      }
+
+      .stat-subtitle {
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 13px;
+      }
+
+      .stat-icon-wrap {
+        width: 46px;
+        height: 46px;
+        flex: 0 0 auto;
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: var(--radius);
+      }
+
+      .section-header {
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      .view-all-link {
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .action-card {
+        min-height: 78px;
+        gap: 12px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        text-decoration: none;
+        transition: transform 180ms, box-shadow 180ms, border-color 180ms;
+      }
+
+      .action-card:hover {
+        border-color: var(--line-strong);
+      }
+
+      .action-icon {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 auto;
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+        color: var(--primary);
+      }
+
+      .action-card:nth-child(2) .action-icon {
+        background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+        color: var(--accent);
+      }
+
+      .action-card:nth-child(3) .action-icon {
+        background: color-mix(in srgb, var(--accent-2) 16%, var(--surface));
+        color: var(--accent-2);
+      }
+
+      .action-title {
+        font-weight: 900;
+      }
+
+      .action-subtitle {
+        margin-top: 3px;
+        color: var(--subtle);
+        font-size: 13px;
+      }
+
+      .diary-card {
+        overflow: hidden;
+        min-height: 270px;
+        border-radius: var(--radius);
+        color: inherit;
+        text-decoration: none;
+        transition: transform 180ms, box-shadow 180ms, border-color 180ms;
+      }
+
+      .diary-card:hover {
+        border-color: var(--line-strong);
+      }
+
+      .cover-image {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: var(--cover-1);
+      }
+
+      .diary-card:nth-child(2) .cover-image {
+        background: var(--cover-2);
+      }
+
+      .diary-card:nth-child(3) .cover-image {
+        background: var(--cover-3);
+      }
+
+      .cover-image::after {
+        content: "";
+        display: block;
+        width: 100%;
+        height: 100%;
+        background:
+          linear-gradient(135deg, rgba(255,255,255,0.28), transparent 40%),
+          linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+      }
+
+      body[data-theme="film"] .cover-image::after {
+        background:
+          repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0 1px, transparent 1px 28px),
+          linear-gradient(135deg, rgba(255,255,255,0.2), transparent 45%);
+      }
+
+      .card-body {
+        padding: 14px;
+      }
+
+      .card-title-row {
+        gap: 8px;
+      }
+
+      .diary-mood {
+        width: 30px;
+        height: 30px;
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+        color: var(--primary);
+        font-size: 0;
+      }
+
+      .diary-mood::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 16%, transparent);
+      }
+
+      .diary-title {
+        overflow: hidden;
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 900;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .diary-preview {
+        display: -webkit-box;
+        margin-top: 10px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .card-footer {
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .category-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 0 9px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .diary-date {
+        color: var(--subtle);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      svg {
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      @media (max-width: 980px) {
+        .stats-grid,
+        .actions-grid,
+        .diary-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .style-switcher {
+          padding: 9px 12px;
+        }
+
+        .layout {
+          flex-direction: column;
+        }
+
+        .sidebar {
+          position: sticky;
+          top: 53px;
+          width: 100%;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .sidebar-header,
+        .sidebar-footer {
+          display: none;
+        }
+
+        .sidebar-nav {
+          padding: 10px;
+        }
+
+        .nav-list {
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .nav-item {
+          min-height: 54px;
+          flex-direction: column;
+          gap: 4px;
+          padding: 6px;
+          font-size: 11px;
+          text-align: center;
+        }
+
+        .nav-item span {
+          white-space: nowrap;
+          line-height: 1;
+        }
+
+        .nav-item.active::before,
+        .active-indicator {
+          display: none;
+        }
+
+        .page-content {
+          padding: 14px;
+        }
+
+        .welcome-section {
+          padding: 20px;
+        }
+
+        .welcome-title {
+          font-size: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body data-theme="rose">
+    <div class="style-switcher" aria-label="风格切换">
+      <span class="switcher-label">5 种风格</span>
+      <button class="style-btn active" data-theme="rose" type="button">鎏金玫瑰</button>
+      <button class="style-btn" data-theme="cream" type="button">奶油手札</button>
+      <button class="style-btn" data-theme="velvet" type="button">暮色高级</button>
+      <button class="style-btn" data-theme="film" type="button">电影胶片</button>
+      <button class="style-btn" data-theme="garden" type="button">清透花园</button>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <div class="logo-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24"><path d="M19.5 12.5 12 20l-7.5-7.5a5 5 0 0 1 7.1-7.1l.4.4.4-.4a5 5 0 0 1 7.1 7.1Z"/></svg>
+            </div>
+            <div>
+              <span class="logo-name">LoveZs</span>
+              <span class="logo-desc">我们的回忆空间</span>
+            </div>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <ul class="nav-list">
+            <li class="nav-item active"><svg width="20" height="20" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg><span>首页</span><svg class="active-indicator" width="16" height="16" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></li>
+            <li class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/><path d="M8 7h6"/><path d="M8 11h7"/></svg><span>日记</span></li>
+            <li class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg><span>重要日</span></li>
+            <li class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg><span>消息</span></li>
+            <li class="nav-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V22a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 1 1 6.1 3l.1.1a1.7 1.7 0 0 0 1.9.3h.1A1.7 1.7 0 0 0 10 2.1V2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 20 6.1l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1A1.7 1.7 0 0 0 21.9 10H22a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z"/></svg><span>设置</span></li>
+          </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-info">
+            <div class="user-avatar"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div>
+              <p class="user-name">Hunesitu</p>
+              <p class="user-email">private diary</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div class="page-content">
+          <section class="welcome-section">
+            <p class="welcome-kicker">Today · Memory dashboard</p>
+            <h1 class="welcome-title">欢迎回来，今天也值得被温柔收藏。</h1>
+            <p class="welcome-date">今天是 2026年6月13日。这里保留现有首页结构，只切换不同视觉风格，方便比较最终要落地哪一套。</p>
+          </section>
+
+          <section class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-content">
+                <div>
+                  <p class="stat-label">日记总数</p>
+                  <p class="stat-value">128</p>
+                </div>
+                <div class="stat-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/><path d="M8 7h6"/><path d="M8 11h7"/></svg></div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-content">
+                <div>
+                  <p class="stat-label">恋爱天数</p>
+                  <p class="stat-value">1009</p>
+                </div>
+                <div class="stat-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M19.5 12.5 12 20l-7.5-7.5a5 5 0 0 1 7.1-7.1l.4.4.4-.4a5 5 0 0 1 7.1 7.1Z"/></svg></div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-content">
+                <div>
+                  <p class="stat-label">下一个整百天</p>
+                  <p class="stat-value">91天</p>
+                  <p class="stat-subtitle">距离 1100 天</p>
+                </div>
+                <div class="stat-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card quick-actions">
+            <h2 class="section-title">快速操作</h2>
+            <div class="actions-grid">
+              <a class="action-card" href="#"><div class="action-icon"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></div><div><p class="action-title">写日记</p><p class="action-subtitle">记录今天</p></div></a>
+              <a class="action-card" href="#"><div class="action-icon"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/><path d="M8 7h6"/><path d="M8 11h7"/></svg></div><div><p class="action-title">看日记</p><p class="action-subtitle">浏览记录</p></div></a>
+              <a class="action-card" href="#"><div class="action-icon"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></div><div><p class="action-title">重要日</p><p class="action-subtitle">重要日子</p></div></a>
+            </div>
+          </section>
+
+          <section class="card recent-diaries">
+            <div class="section-header">
+              <h2 class="section-title">最近日记</h2>
+              <a href="#" class="view-all-link">查看全部 →</a>
+            </div>
+            <div class="diary-grid">
+              <a class="diary-card" href="#">
+                <div class="cover-image"></div>
+                <div class="card-body">
+                  <div class="card-title-row"><span class="diary-mood">happy</span><h3 class="diary-title">把傍晚留在相册里</h3></div>
+                  <p class="diary-preview">路过街角的时候，光刚好落在你肩上。那一秒不算盛大，但很值得记住。</p>
+                  <div class="card-footer"><span class="category-badge">生活</span><span class="diary-date">6月13日 · Hunesitu</span></div>
+                </div>
+              </a>
+              <a class="diary-card" href="#">
+                <div class="cover-image"></div>
+                <div class="card-body">
+                  <div class="card-title-row"><span class="diary-mood">calm</span><h3 class="diary-title">周末的慢早餐</h3></div>
+                  <p class="diary-preview">咖啡、面包和没有闹钟的早晨。我们把一整天都过得很轻。</p>
+                  <div class="card-footer"><span class="category-badge">日常</span><span class="diary-date">6月9日 · Hunesitu</span></div>
+                </div>
+              </a>
+              <a class="diary-card" href="#">
+                <div class="cover-image"></div>
+                <div class="card-body">
+                  <div class="card-title-row"><span class="diary-mood">loved</span><h3 class="diary-title">新的倒计时</h3></div>
+                  <p class="diary-preview">把下一次旅行放进重要日里，连等待都开始有了形状。</p>
+                  <div class="card-footer"><span class="category-badge">旅行</span><span class="diary-date">6月1日 · Hunesitu</span></div>
+                </div>
+              </a>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const buttons = Array.from(document.querySelectorAll(".style-btn"));
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          document.body.dataset.theme = button.dataset.theme;
+          buttons.forEach((item) => item.classList.toggle("active", item === button));
+        });
+      });
+    </script>
+  </body>
+</html>

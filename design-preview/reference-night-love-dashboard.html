@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoveZS 夜空仪表盘</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --page: #080a19;
+      --panel: #101225;
+      --panel-soft: rgba(24, 20, 46, 0.74);
+      --panel-glass: rgba(42, 27, 63, 0.72);
+      --rose: #f078b6;
+      --rose-bright: #ff8fc8;
+      --violet: #7e58e8;
+      --orchid: #b456c8;
+      --ink: #fbf7ff;
+      --ink-soft: #cfc5dd;
+      --ink-muted: #8d849e;
+      --line: rgba(255, 255, 255, 0.1);
+      --line-strong: rgba(255, 143, 200, 0.34);
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --font-sans: "Inter", "Noto Sans SC", system-ui, sans-serif;
+      --font-serif: "Noto Serif SC", Georgia, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: #15152b;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 8px;
+      color: var(--ink);
+      font-family: var(--font-sans);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(198, 94, 198, 0.28), transparent 24%),
+        radial-gradient(circle at 82% 14%, rgba(91, 78, 190, 0.24), transparent 28%),
+        linear-gradient(135deg, #0b0c19 0%, #191233 56%, #0c0e1c 100%);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    button,
+    a {
+      font: inherit;
+    }
+
+    .app-shell {
+      width: min(1464px, 100%);
+      min-height: min(930px, calc(100vh - 16px));
+      display: grid;
+      grid-template-columns: 252px minmax(0, 1fr);
+      overflow: hidden;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      background: var(--page);
+      box-shadow: var(--shadow);
+    }
+
+    .app-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(1px 1px at 14% 12%, rgba(255, 255, 255, 0.9), transparent 2px),
+        radial-gradient(1px 1px at 35% 18%, rgba(255, 210, 241, 0.7), transparent 2px),
+        radial-gradient(1.5px 1.5px at 56% 10%, rgba(255, 255, 255, 0.8), transparent 3px),
+        radial-gradient(1px 1px at 76% 13%, rgba(255, 160, 211, 0.8), transparent 2px),
+        radial-gradient(1px 1px at 91% 19%, rgba(255, 255, 255, 0.75), transparent 2px);
+      opacity: 0.55;
+      z-index: 2;
+    }
+
+    .sidebar {
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      padding: 46px 20px 36px;
+      background:
+        linear-gradient(180deg, rgba(17, 17, 37, 0.94), rgba(13, 15, 32, 0.98)),
+        radial-gradient(circle at 100% 6%, rgba(203, 85, 171, 0.16), transparent 42%);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 36px;
+      padding: 0 14px;
+      margin-bottom: 46px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .heart-mark,
+    .avatar {
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .heart-mark {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 36% 30%, #ffe2ef 0 20%, #ff7cb7 45%, #ee4fa1 100%);
+      box-shadow: 0 0 24px rgba(255, 124, 183, 0.55);
+    }
+
+    .heart-mark svg {
+      width: 14px;
+      height: 14px;
+      fill: #fff;
+    }
+
+    .nav {
+      display: grid;
+      gap: 14px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 58px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 10px;
+      color: #d8d0e5;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .nav-item:hover,
+    .nav-item:focus-visible {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
+    }
+
+    .nav-item.active {
+      color: #ff9cca;
+      background: linear-gradient(90deg, rgba(131, 62, 123, 0.64), rgba(64, 45, 100, 0.38));
+      box-shadow: inset 0 0 0 1px rgba(255, 143, 200, 0.06);
+    }
+
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+      stroke-width: 2;
+    }
+
+    .profile {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      color: #fff;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      overflow: hidden;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      background: linear-gradient(135deg, #f8c7d6, #5b6a9f);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .profile-name {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .profile-mail {
+      margin: 0;
+      color: #8b8498;
+      font-size: 11px;
+    }
+
+    .main {
+      min-width: 0;
+      position: relative;
+      z-index: 3;
+      background:
+        linear-gradient(180deg, rgba(9, 10, 23, 0.18), #070918 50%),
+        radial-gradient(circle at 88% 20%, rgba(223, 73, 163, 0.16), transparent 36%);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 460px;
+      padding: 104px 84px 0;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -3;
+      background-image:
+        linear-gradient(180deg, rgba(8, 9, 22, 0.24), rgba(8, 9, 22, 0.42) 46%, #070918 100%),
+        linear-gradient(90deg, rgba(7, 8, 19, 0.64), rgba(7, 8, 19, 0.03) 42%, rgba(7, 8, 19, 0.3)),
+        url("https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1800&q=85");
+      background-position: center, center, center 42%;
+      background-size: cover;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 83% 15%, rgba(255, 184, 220, 0.34), transparent 2px),
+        radial-gradient(circle at 70% 19%, rgba(255, 255, 255, 0.72), transparent 1.5px),
+        radial-gradient(circle at 50% 12%, rgba(255, 135, 200, 0.55), transparent 1.5px),
+        radial-gradient(circle at 95% 38%, rgba(255, 255, 255, 0.62), transparent 1.5px),
+        linear-gradient(112deg, transparent 0 52%, rgba(251, 111, 184, 0.3) 63%, rgba(98, 58, 152, 0.18) 78%, transparent 100%);
+      mix-blend-mode: screen;
+      opacity: 0.76;
+    }
+
+    .moon {
+      position: absolute;
+      top: 44px;
+      right: 118px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #ffd3e7;
+      box-shadow: 0 0 34px rgba(255, 170, 220, 0.78);
+    }
+
+    .moon::after {
+      content: "";
+      position: absolute;
+      top: -8px;
+      left: -12px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #11112d;
+    }
+
+    .couple {
+      position: absolute;
+      right: 262px;
+      bottom: 64px;
+      width: 150px;
+      height: 184px;
+      opacity: 0.92;
+      filter: drop-shadow(0 18px 20px rgba(0, 0, 0, 0.4));
+    }
+
+    .person {
+      position: absolute;
+      bottom: 0;
+      background: #090812;
+    }
+
+    .person::before {
+      content: "";
+      position: absolute;
+      top: -34px;
+      left: 50%;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #05040b;
+      transform: translateX(-50%);
+    }
+
+    .person.left {
+      left: 14px;
+      width: 50px;
+      height: 126px;
+      border-radius: 26px 25px 8px 8px;
+      transform: rotate(-8deg);
+    }
+
+    .person.left::after {
+      content: "";
+      position: absolute;
+      top: -40px;
+      left: 4px;
+      width: 42px;
+      height: 76px;
+      border-radius: 50% 50% 45% 45%;
+      background: #06050c;
+      transform: rotate(-10deg);
+    }
+
+    .person.right {
+      right: 22px;
+      width: 54px;
+      height: 142px;
+      border-radius: 26px 28px 8px 8px;
+      transform: rotate(4deg);
+    }
+
+    .person.right::after {
+      content: "";
+      position: absolute;
+      top: -42px;
+      left: 7px;
+      width: 34px;
+      height: 22px;
+      border-radius: 60% 45% 45% 55%;
+      background: #04030a;
+      transform: rotate(-12deg);
+    }
+
+    .flowers {
+      position: absolute;
+      right: -6px;
+      bottom: 44px;
+      width: 132px;
+      height: 150px;
+      opacity: 0.78;
+      background:
+        radial-gradient(circle at 74% 26%, #ef7ebd 0 7px, transparent 8px),
+        radial-gradient(circle at 42% 48%, #c253a9 0 6px, transparent 7px),
+        radial-gradient(circle at 66% 64%, #df67b0 0 8px, transparent 9px),
+        radial-gradient(circle at 18% 74%, #8d3d91 0 7px, transparent 8px),
+        radial-gradient(circle at 84% 86%, #f08bc5 0 5px, transparent 6px);
+      filter: blur(0.2px);
+    }
+
+    .hero-title {
+      margin: 0 0 22px;
+      max-width: 720px;
+      font-family: var(--font-serif);
+      font-size: clamp(36px, 4.2vw, 52px);
+      font-weight: 700;
+      letter-spacing: 0;
+      line-height: 1.14;
+      text-shadow: 0 4px 28px rgba(255, 217, 239, 0.28);
+    }
+
+    .hero-title svg {
+      display: inline-block;
+      width: 34px;
+      height: 34px;
+      margin-left: 8px;
+      fill: var(--rose-bright);
+      filter: drop-shadow(0 0 14px rgba(255, 143, 200, 0.7));
+      vertical-align: -4px;
+    }
+
+    .hero-subtitle {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 17px;
+      font-weight: 600;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    .content {
+      position: relative;
+      margin-top: -80px;
+      padding: 0 84px 56px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 30px;
+      margin-bottom: 52px;
+    }
+
+    .stat-card {
+      min-height: 160px;
+      position: relative;
+      overflow: hidden;
+      padding: 30px 34px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fef8ff;
+      background:
+        linear-gradient(135deg, rgba(43, 32, 72, 0.86), rgba(30, 22, 52, 0.72)),
+        radial-gradient(circle at 72% 32%, rgba(247, 118, 186, 0.24), transparent 42%);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(18px);
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(1px 1px at 22% 28%, rgba(255, 255, 255, 0.7), transparent 2px),
+        radial-gradient(1px 1px at 76% 24%, rgba(255, 185, 226, 0.85), transparent 2px),
+        radial-gradient(1px 1px at 68% 72%, rgba(255, 255, 255, 0.5), transparent 2px);
+      opacity: 0.55;
+    }
+
+    .stat-card.featured {
+      border-color: rgba(255, 143, 200, 0.5);
+      background:
+        linear-gradient(135deg, rgba(79, 43, 91, 0.88), rgba(112, 48, 105, 0.62)),
+        radial-gradient(circle at 74% 28%, rgba(255, 143, 200, 0.34), transparent 42%);
+      box-shadow: 0 20px 54px rgba(236, 89, 169, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-label {
+      position: relative;
+      margin: 0 0 10px;
+      color: #eab9dc;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .stat-number {
+      position: relative;
+      margin: 0;
+      font-family: Georgia, "Noto Serif SC", serif;
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .stat-unit {
+      margin-left: 8px;
+      font-size: 18px;
+      font-family: var(--font-sans);
+      font-weight: 700;
+    }
+
+    .stat-caption {
+      position: relative;
+      margin: 8px 0 0;
+      color: #b9aeca;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .outline-heart {
+      position: absolute;
+      top: 46px;
+      right: 30px;
+      width: 42px;
+      height: 42px;
+      color: #ef8fc5;
+      filter: drop-shadow(0 0 14px rgba(255, 143, 200, 0.38));
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .view-all {
+      color: #e581bd;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: color 180ms ease;
+    }
+
+    .view-all:hover,
+    .view-all:focus-visible {
+      color: #ffb2d7;
+      outline: none;
+    }
+
+    .diary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .diary-card {
+      overflow: hidden;
+      min-height: 248px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: rgba(21, 18, 38, 0.9);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+      transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+    }
+
+    .diary-card:hover,
+    .diary-card:focus-within {
+      transform: translateY(-4px);
+      border-color: rgba(255, 143, 200, 0.38);
+      box-shadow: 0 22px 44px rgba(0, 0, 0, 0.34);
+    }
+
+    .diary-image {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1.95 / 1;
+      object-fit: cover;
+      background: #201b32;
+    }
+
+    .diary-body {
+      padding: 14px 18px 18px;
+    }
+
+    .diary-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      color: #fff8fc;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .diary-title svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--rose);
+      color: var(--rose);
+      flex: 0 0 auto;
+    }
+
+    .diary-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #8c8499;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: #e991c3;
+      background: rgba(237, 101, 174, 0.16);
+      border: 1px solid rgba(237, 101, 174, 0.16);
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        padding: 0;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        border-radius: 0;
+        grid-template-columns: 92px minmax(0, 1fr);
+      }
+
+      .sidebar {
+        padding: 28px 12px;
+      }
+
+      .brand {
+        justify-content: center;
+        padding: 0;
+        margin-bottom: 30px;
+      }
+
+      .brand span,
+      .nav-label,
+      .profile-copy {
+        display: none;
+      }
+
+      .nav-item {
+        justify-content: center;
+        padding: 0;
+      }
+
+      .profile {
+        justify-content: center;
+        padding: 0;
+      }
+
+      .hero,
+      .content {
+        padding-left: 36px;
+        padding-right: 36px;
+      }
+
+      .stats {
+        gap: 18px;
+      }
+    }
+
+    @media (max-width: 780px) {
+      .app-shell {
+        display: block;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        min-height: 74px;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .brand {
+        margin: 0;
+      }
+
+      .brand span {
+        display: inline;
+      }
+
+      .nav {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        margin-left: auto;
+        padding-bottom: 2px;
+      }
+
+      .nav-item {
+        min-width: 48px;
+        min-height: 48px;
+        padding: 0 12px;
+      }
+
+      .profile {
+        display: none;
+      }
+
+      .hero {
+        min-height: 430px;
+        padding: 72px 24px 0;
+      }
+
+      .hero-title {
+        font-size: 34px;
+      }
+
+      .hero-subtitle {
+        max-width: 320px;
+        font-size: 15px;
+      }
+
+      .moon {
+        top: 34px;
+        right: 38px;
+        transform: scale(0.72);
+      }
+
+      .couple {
+        right: 28px;
+        bottom: 58px;
+        transform: scale(0.7);
+        transform-origin: bottom right;
+      }
+
+      .flowers {
+        opacity: 0.52;
+      }
+
+      .content {
+        margin-top: -58px;
+        padding: 0 18px 36px;
+      }
+
+      .stats,
+      .diary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        gap: 14px;
+        margin-bottom: 36px;
+      }
+
+      .stat-card {
+        min-height: 134px;
+      }
+
+      .section-head {
+        margin-bottom: 16px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand" href="#" aria-label="LoveZS 首页">
+        <span class="heart-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7.4-4.38-9.7-8.6C.52 9.15 2.28 5.2 5.93 5.2c2.05 0 3.36 1.14 4.07 2.17.71-1.03 2.02-2.17 4.07-2.17 3.65 0 5.41 3.95 3.63 7.2C15.4 16.62 12 21 12 21Z"/></svg>
+        </span>
+        <span>LoveZs</span>
+      </a>
+
+      <nav class="nav">
+        <button class="nav-item active" type="button" aria-current="page" title="首页">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 10.8 9-7 9 7V20a1 1 0 0 1-1 1h-5.2v-6.2H9.2V21H4a1 1 0 0 1-1-1v-9.2Z" stroke-linejoin="round"/></svg>
+          <span class="nav-label">首页</span>
+        </button>
+        <button class="nav-item" type="button" title="日记">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h11.5A2.5 2.5 0 0 1 19 6.5V20H6.5A2.5 2.5 0 0 1 4 17.5V5a1 1 0 0 1 1-1Z"/><path d="M8 8h7M8 12h6M6.5 20A2.5 2.5 0 0 1 9 17.5V17h10"/></svg>
+          <span class="nav-label">日记</span>
+        </button>
+        <button class="nav-item" type="button" title="重要日">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 3v4M17 3v4M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
+          <span class="nav-label">重要日</span>
+        </button>
+        <button class="nav-item" type="button" title="消息">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 9a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8Z"/><path d="M10 21h4"/></svg>
+          <span class="nav-label">消息</span>
+        </button>
+        <button class="nav-item" type="button" title="设置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.66V21a2 2 0 1 1-4 0v-.09a1.8 1.8 0 0 0-1.1-1.66 1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.66-1.1H3a2 2 0 1 1 0-4h.09A1.8 1.8 0 0 0 4.75 8.8a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.8 1.8 0 0 0 1.98.36H9.2A1.8 1.8 0 0 0 10.3 2.7V3a2 2 0 1 1 4 0v-.09a1.8 1.8 0 0 0 1.1 1.66 1.8 1.8 0 0 0 1.98-.36l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.8 1.8 0 0 0-.36 1.98v.01A1.8 1.8 0 0 0 21.3 10H21a2 2 0 1 1 0 4h.09A1.8 1.8 0 0 0 19.4 15Z"/></svg>
+          <span class="nav-label">设置</span>
+        </button>
+      </nav>
+
+      <div class="profile">
+        <div class="avatar" aria-hidden="true">H</div>
+        <div class="profile-copy">
+          <p class="profile-name">Hnst</p>
+          <p class="profile-mail">2925537739@qq.com</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="hero" aria-labelledby="welcome-title">
+        <div class="moon" aria-hidden="true"></div>
+        <div class="couple" aria-hidden="true">
+          <span class="person left"></span>
+          <span class="person right"></span>
+        </div>
+        <div class="flowers" aria-hidden="true"></div>
+        <h1 class="hero-title" id="welcome-title">
+          欢迎回来，Hnst
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.4-4.38-9.7-8.6C.52 9.15 2.28 5.2 5.93 5.2c2.05 0 3.36 1.14 4.07 2.17.71-1.03 2.02-2.17 4.07-2.17 3.65 0 5.41 3.95 3.63 7.2C15.4 16.62 12 21 12 21Z"/></svg>
+        </h1>
+        <p class="hero-subtitle">今天是 2026年6月17日，记录美好时光</p>
+      </section>
+
+      <section class="content">
+        <div class="stats" aria-label="恋爱数据概览">
+          <article class="stat-card">
+            <p class="stat-label">日记总数</p>
+            <p class="stat-number">38</p>
+            <p class="stat-caption">篇日记</p>
+          </article>
+          <article class="stat-card featured">
+            <p class="stat-label">恋爱天数</p>
+            <p class="stat-number">1013</p>
+            <p class="stat-caption">天</p>
+          </article>
+          <article class="stat-card">
+            <svg class="outline-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
+            <p class="stat-label">下一个纪念日</p>
+            <p class="stat-number">87<span class="stat-unit">天</span></p>
+            <p class="stat-caption">距离 1100 天</p>
+          </article>
+        </div>
+
+        <div class="section-head">
+          <h2 class="section-title">最近日记</h2>
+          <a class="view-all" href="#">查看全部 →</a>
+        </div>
+
+        <div class="diary-grid">
+          <article class="diary-card">
+            <img class="diary-image" src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=700&q=82" width="700" height="360" alt="校园建筑与毕业季场景">
+            <div class="diary-body">
+              <h3 class="diary-title">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.4-4.38-9.7-8.6C.52 9.15 2.28 5.2 5.93 5.2c2.05 0 3.36 1.14 4.07 2.17.71-1.03 2.02-2.17 4.07-2.17 3.65 0 5.41 3.95 3.63 7.2C15.4 16.62 12 21 12 21Z"/></svg>
+                毕业照
+              </h3>
+              <div class="diary-meta">
+                <span class="tag">生活</span>
+                <span>6月5日 · Hnst</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="diary-card">
+            <img class="diary-image" src="https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=700&q=82" width="700" height="360" alt="森林小径上的情侣旅行">
+            <div class="diary-body">
+              <h3 class="diary-title">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.4-4.38-9.7-8.6C.52 9.15 2.28 5.2 5.93 5.2c2.05 0 3.36 1.14 4.07 2.17.71-1.03 2.02-2.17 4.07-2.17 3.65 0 5.41 3.95 3.63 7.2C15.4 16.62 12 21 12 21Z"/></svg>
+                青岛之旅
+              </h3>
+              <div class="diary-meta">
+                <span class="tag">旅行</span>
+                <span>5月17日 · Hnst</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="diary-card">
+            <img class="diary-image" src="https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=700&q=82" width="700" height="360" alt="暖色床头灯与日记本">
+            <div class="diary-body">
+              <h3 class="diary-title">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.4-4.38-9.7-8.6C.52 9.15 2.28 5.2 5.93 5.2c2.05 0 3.36 1.14 4.07 2.17.71-1.03 2.02-2.17 4.07-2.17 3.65 0 5.41 3.95 3.63 7.2C15.4 16.62 12 21 12 21Z"/></svg>
+                一起做饭
+              </h3>
+              <div class="diary-meta">
+                <span class="tag">生活</span>
+                <span>5月10日 · Hnst</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

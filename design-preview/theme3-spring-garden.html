@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoveZS - 春日花园主题</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sage: {
+              50: '#f0f7f0',
+              100: '#dceae9',
+              200: '#bcd6bc',
+              300: '#94be94',
+              400: '#6ea06e',
+              500: '#558755',
+              600: '#436d43',
+            },
+            peach: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#f97316',
+            },
+            cream: {
+              50: '#fefcf8',
+              100: '#fdf8ef',
+              200: '#f9f0d9',
+              300: '#f3e5be',
+            },
+            moss: {
+              50: '#f4f7f4',
+              100: '#e7ede7',
+              200: '#d0dcd0',
+              300: '#aec6ae',
+              400: '#86a886',
+            }
+          },
+          fontFamily: {
+            sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .card {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow:
+          0 1px 2px rgba(85, 135, 85, 0.05),
+          0 4px 12px rgba(85, 135, 85, 0.06),
+          0 8px 24px rgba(85, 135, 85, 0.04);
+      }
+      .card-hover {
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .card-hover:hover {
+        transform: translateY(-6px);
+        box-shadow:
+          0 4px 12px rgba(85, 135, 85, 0.08),
+          0 16px 40px rgba(85, 135, 85, 0.1);
+        border-color: rgba(180, 210, 180, 0.5);
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #6ea06e 0%, #558755 100%);
+      }
+      .btn-secondary {
+        background: linear-gradient(135deg, #fdba74 0%, #fb923c 100%);
+      }
+      .text-gradient {
+        background: linear-gradient(135deg, #558755 0%, #86a886 50%, #fb923c 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .organic-shape {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      }
+      .organic-shape-2 {
+        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+      }
+      .organic-shape-3 {
+        border-radius: 70% 30% 50% 50% / 50% 60% 40% 50%;
+      }
+      .leaf-float {
+        animation: leafFloat 6s ease-in-out infinite;
+      }
+      @keyframes leafFloat {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-8px) rotate(3deg); }
+        50% { transform: translateY(-4px) rotate(-2deg); }
+        75% { transform: translateY(-10px) rotate(2deg); }
+      }
+      .leaf-float-delayed {
+        animation: leafFloat 7s ease-in-out infinite;
+        animation-delay: 1s;
+      }
+      .spring-gradient {
+        background: linear-gradient(135deg, #f0f7f0 0%, #fdf8ef 25%, #fff7ed 50%, #fdf8ef 75%, #f0f7f0 100%);
+      }
+      .nav-blur {
+        background: rgba(254, 252, 248, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen font-sans spring-gradient text-slate-700 relative overflow-x-hidden">
+
+  <!-- 装饰背景元素 -->
+  <div class="fixed top-20 left-10 w-24 h-24 bg-sage-100 opacity-40 organic-shape leaf-float pointer-events-none"></div>
+  <div class="fixed top-40 right-20 w-16 h-16 bg-peach-100 opacity-50 organic-shape-2 leaf-float-delayed pointer-events-none"></div>
+  <div class="fixed bottom-40 left-20 w-20 h-20 bg-cream-200 opacity-40 organic-shape-3 leaf-float pointer-events-none"></div>
+  <div class="fixed bottom-20 right-10 w-12 h-12 bg-moss-200 opacity-30 organic-shape leaf-float-delayed pointer-events-none"></div>
+
+  <!-- 导航栏 -->
+  <nav class="nav-blur sticky top-0 z-50 border-b border-sage-100/60">
+    <div class="max-w-6xl mx-auto px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full btn-primary flex items-center justify-center leaf-float">
+            <span class="text-white text-lg">🌿</span>
+          </div>
+          <span class="text-xl font-semibold text-sage-600">LoveZS</span>
+        </div>
+        <div class="flex items-center gap-8">
+          <a href="#" class="text-sage-600 font-medium border-b-2 border-sage-400 pb-1">首页</a>
+          <a href="#" class="text-slate-500 hover:text-sage-500 transition-colors duration-300">日记</a>
+          <a href="#" class="text-slate-500 hover:text-sage-500 transition-colors duration-300">重要日</a>
+          <a href="#" class="text-slate-500 hover:text-sage-500 transition-colors duration-300">相册</a>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-sage-200 to-peach-200 flex items-center justify-center">
+            <span class="text-sage-600 text-sm">🌸</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-6 lg:px-8 py-8 relative z-10">
+
+    <!-- 欢迎区域 -->
+    <section class="mb-10 text-center">
+      <div class="inline-block mb-4">
+        <span class="text-xs text-sage-500 font-medium tracking-[0.25em] uppercase">🌱 Spring Memories 🌱</span>
+      </div>
+      <h1 class="text-3xl font-semibold text-gradient mb-3">
+        每一个与你共度的日子，都如春日般温暖
+      </h1>
+      <p class="text-slate-500">
+        2026年6月17日 · 星期三 · 我们的第 <span class="text-sage-600 font-medium">1013</span> 天
+      </p>
+    </section>
+
+    <!-- 恋爱天数卡片 -->
+    <section class="mb-8">
+      <div class="card rounded-2xl p-7 card-hover">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-5">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-sage-100 to-sage-200 flex items-center justify-center">
+              <span class="text-2xl">💚</span>
+            </div>
+            <div>
+              <p class="text-slate-400 text-xs tracking-wider uppercase mb-1">在一起的时光</p>
+              <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-light text-sage-600">1013</span>
+                <span class="text-lg text-peach-500 font-medium">天</span>
+              </div>
+              <p class="text-slate-400 text-sm mt-1">自 2023.09.09 起</p>
+            </div>
+          </div>
+          <div class="h-14 w-px bg-sage-100"></div>
+          <div class="text-right pr-2">
+            <div class="flex items-baseline justify-end gap-1 mb-2">
+              <span class="text-2xl font-light text-peach-500">87</span>
+              <span class="text-sm text-peach-500">天</span>
+            </div>
+            <p class="text-slate-400 text-xs">距 1100 天纪念</p>
+            <div class="w-32 h-1.5 bg-sage-50 rounded-full mt-2 overflow-hidden">
+              <div class="h-full rounded-full" style="width: 13%; background: linear-gradient(90deg, #94be94, #558755);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 统计卡片 -->
+    <section class="grid grid-cols-3 gap-5 mb-8">
+      <div class="card rounded-xl p-5 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-xs tracking-wide uppercase">日记总数</p>
+            <p class="text-2xl font-light text-sage-600 mt-1">38</p>
+            <p class="text-slate-400 text-xs mt-1">篇美好记录</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-sage-100 to-sage-200 flex items-center justify-center">
+            <span class="text-xl">📖</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card rounded-xl p-5 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-xs tracking-wide uppercase">珍贵影像</p>
+            <p class="text-2xl font-light text-peach-500 mt-1">142</p>
+            <p class="text-slate-400 text-xs mt-1">张定格瞬间</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-peach-100 to-peach-200 flex items-center justify-center">
+            <span class="text-xl">📷</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card rounded-xl p-5 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-xs tracking-wide uppercase">即将到来</p>
+            <p class="text-2xl font-light text-moss-400 mt-1">2</p>
+            <p class="text-slate-400 text-xs mt-1">个重要日子</p>
+          </div>
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-moss-100 to-moss-200 flex items-center justify-center">
+            <span class="text-xl">🌼</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 快速操作 -->
+    <section class="mb-8">
+      <h2 class="text-base font-medium text-slate-600 mb-4 flex items-center gap-2">
+        <span>🌼</span> 快速操作
+      </h2>
+      <div class="grid grid-cols-3 gap-4">
+        <a href="#" class="card rounded-xl p-5 card-hover block">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl btn-primary flex items-center justify-center">
+              <span class="text-white text-lg">✍️</span>
+            </div>
+            <div>
+              <p class="font-medium text-slate-700">写日记</p>
+              <p class="text-sm text-slate-400">记录今天的美好</p>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="card rounded-xl p-5 card-hover block">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-peach-300 to-peach-400 flex items-center justify-center">
+              <span class="text-white text-lg">📚</span>
+            </div>
+            <div>
+              <p class="font-medium text-slate-700">看日记</p>
+              <p class="text-sm text-slate-400">回忆往昔时光</p>
+            </div>
+          </div>
+        </a>
+        <a href="#" class="card rounded-xl p-5 card-hover block">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-moss-300 to-moss-400 flex items-center justify-center">
+              <span class="text-white text-lg">📅</span>
+            </div>
+            <div>
+              <p class="font-medium text-slate-700">重要日</p>
+              <p class="text-sm text-slate-400">倒计时提醒</p>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- 最近日记 -->
+    <section>
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-base font-medium text-slate-600 flex items-center gap-2">
+          <span>📝</span> 最近日记
+        </h2>
+        <a href="#" class="text-sage-500 text-sm hover:text-sage-600 transition-colors flex items-center gap-1">
+          查看全部 →
+        </a>
+      </div>
+      <div class="grid grid-cols-3 gap-5">
+        <!-- 日记卡片 1 -->
+        <div class="card rounded-xl overflow-hidden card-hover cursor-pointer">
+          <div class="h-36 relative" style="background: linear-gradient(135deg, #dceae9 0%, #fdf8ef 50%, #fed7aa 100%);">
+            <div class="absolute inset-0 flex items-center justify-center text-5xl opacity-50">
+              🌅
+            </div>
+            <div class="absolute top-3 right-3">
+              <span class="bg-white/85 backdrop-blur px-3 py-1 rounded-full text-xs text-sage-600 font-medium">
+                旅行
+              </span>
+            </div>
+          </div>
+          <div class="p-5">
+            <h3 class="font-medium text-slate-700 mb-2 line-clamp-1">
+              一起看日落的海边时光
+            </h3>
+            <p class="text-sm text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+              今天和你一起去海边看日落，夕阳染红了整片天空，海风吹拂着脸庞...
+            </p>
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>6月15日</span>
+              <span>😊 开心</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 日记卡片 2 -->
+        <div class="card rounded-xl overflow-hidden card-hover cursor-pointer">
+          <div class="h-36 relative" style="background: linear-gradient(135deg, #f9f0d9 0%, #ffedd5 50%, #dceae9 100%);">
+            <div class="absolute inset-0 flex items-center justify-center text-5xl opacity-50">
+              🍰
+            </div>
+            <div class="absolute top-3 right-3">
+              <span class="bg-white/85 backdrop-blur px-3 py-1 rounded-full text-xs text-peach-600 font-medium">
+                美食
+              </span>
+            </div>
+          </div>
+          <div class="p-5">
+            <h3 class="font-medium text-slate-700 mb-2 line-clamp-1">
+              第一次一起做蛋糕
+            </h3>
+            <p class="text-sm text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+              虽然蛋糕烤得有点焦，奶油也抹得不平整，但和你一起在厨房忙碌...
+            </p>
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>6月12日</span>
+              <span>😍 被爱</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 日记卡片 3 -->
+        <div class="card rounded-xl overflow-hidden card-hover cursor-pointer">
+          <div class="h-36 relative" style="background: linear-gradient(135deg, #e7ede7 0%, #fdf8ef 50%, #f9f0d9 100%);">
+            <div class="absolute inset-0 flex items-center justify-center text-5xl opacity-50">
+              🌙
+            </div>
+            <div class="absolute top-3 right-3">
+              <span class="bg-white/85 backdrop-blur px-3 py-1 rounded-full text-xs text-moss-500 font-medium">
+                日常
+              </span>
+            </div>
+          </div>
+          <div class="p-5">
+            <h3 class="font-medium text-slate-700 mb-2 line-clamp-1">
+              夜晚散步的星空
+            </h3>
+            <p class="text-sm text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+              晚上和你一起在小区散步，抬头看到了好久没见过的星空，星星在闪烁...
+            </p>
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>6月10日</span>
+              <span>😌 平静</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 底部标签 -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 nav-blur px-6 py-3 rounded-full border border-sage-100 shadow-lg">
+    <span class="text-sm font-medium text-sage-600">🌿 方案三：春日花园主题 · Spring Garden Theme</span>
+  </div>
+
+</body>
+</html>

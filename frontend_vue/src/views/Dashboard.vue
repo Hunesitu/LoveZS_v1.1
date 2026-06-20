@@ -1,617 +1,803 @@
-<!--
-Dashboard 页面
-显示最近日记、恋爱天数与快速入口
--->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useDiaries } from '@/composables/useDiaries'
-import { resolveMediaUrl, isVideo } from '@/utils/media'
-import { BookOpen, Heart, Calendar, Plus } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import { ArrowRight, CalendarHeart, Film, Heart, Images, Plus, Sparkles } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
-
-import type { Photo } from '@/types'
+import { useDiaries } from '@/composables/useDiaries'
+import { resolveMediaUrl, isVideo } from '@/utils/media'
+import type { Diary, Photo } from '@/types'
 
 dayjs.locale('zh-cn')
 
 const { diaries, isLoading, loadDiaries, totalCount } = useDiaries()
 
-// 相恋纪念日（硬编码）
 const LOVE_ANNIVERSARY = '2023-09-09'
-
-const loveDays = ref<number>(0)
+const loveDays = ref(0)
 const nextMilestone = ref<{ target: number; remaining: number } | null>(null)
 
-// 计算恋爱天数（当天算第1天）
+interface StoryFrame {
+  id: string
+  diary?: Diary
+  media?: Photo | null
+  title: string
+  caption: string
+  date?: string
+}
+
+const fallbackLines = [
+  '把平凡的一天剪成只属于我们的电影。',
+  '每一次回头，都有一束光落在你身上。',
+  '今晚的星光，替我们保存所有心动。',
+  '慢慢写，慢慢爱，镜头会记得。',
+  '有你的日常，也值得被放在银幕中央。',
+  '下一幕，仍然是我们。',
+]
+
+const getFallbackLine = (index: number) => fallbackLines[index % fallbackLines.length] || '下一幕，仍然是我们。'
+
+const defaultFrame: StoryFrame = {
+  id: 'fallback-default',
+  title: '今晚的回忆放映中',
+  caption: getFallbackLine(0),
+}
+
 const calculateLoveDays = () => {
   const anniversary = dayjs(LOVE_ANNIVERSARY).startOf('day')
   const today = dayjs().startOf('day')
-  return today.diff(anniversary, 'day') + 1  // +1 因为当天算第1天
+  return today.diff(anniversary, 'day') + 1
 }
 
-// 计算下一个整百天
 const calculateNextMilestone = (currentDays: number) => {
-  const nextHundred = Math.ceil(currentDays / 100) * 100
+  const target = Math.ceil(currentDays / 100) * 100
   return {
-    target: nextHundred,
-    remaining: nextHundred - currentDays
+    target,
+    remaining: target - currentDays,
   }
 }
 
-const diaryCount = totalCount  // 使用后端返回的真实总数
+const getDiaryCover = (diary: Diary) => diary.cover_media || diary.attached_photos?.[0] || null
 
-const loadDashboardData = async () => {
-  try {
-    await loadDiaries({ limit: 6 })
+const diaryFrames = computed<StoryFrame[]>(() =>
+  diaries.value.map((diary, index) => ({
+    id: `diary-${diary.id}`,
+    diary,
+    media: getDiaryCover(diary),
+    title: diary.title || `第 ${index + 1} 幕`,
+    caption: diary.content?.replace(/[#*`_[\]]/g, '').slice(0, 42) || getFallbackLine(index),
+    date: diary.date || diary.created_at,
+  }))
+)
 
-    // 计算恋爱天数
-    const days = calculateLoveDays()
-    loveDays.value = days
-
-    // 计算下一个整百天
-    nextMilestone.value = calculateNextMilestone(days)
-  } catch (error) {
-    console.error('Failed to load dashboard data:', error)
+const storyFrames = computed<StoryFrame[]>(() => {
+  const frames = [...diaryFrames.value]
+  let index = 0
+  while (frames.length < 6) {
+    frames.push({
+      id: `fallback-${index}`,
+      title: `浪漫片段 ${index + 1}`,
+      caption: getFallbackLine(index),
+    })
+    index += 1
   }
-}
+  return frames.slice(0, 6)
+})
 
-const getFirstImage = (photos: Photo[]) =>
-  photos.find(p => !isVideo(p)) || photos[0] || null
+const heroFrame = computed<StoryFrame>(() => storyFrames.value[0] || defaultFrame)
+const snippetFrames = computed(() => storyFrames.value.slice(1, 5))
+const recentDiaries = computed(() => diaries.value.slice(0, 3))
 
-const getMoodEmoji = (mood: string) => {
-  const moodEmojis: Record<string, string> = {
-    happy: '😊',
-    sad: '😩',
-    excited: '🤩',
-    calm: '😌',
-    angry: '😧',
-    tired: '😾',
-    loved: '😍',
-    grateful: '🙏',
-  }
-  return moodEmojis[mood] || '😊'
-}
+const posterStyle = (index: number) => ({
+  '--poster-hue': `${320 + index * 18}deg`,
+  '--poster-delay': `${index * 70}ms`,
+})
 
-const stripMarkdown = (content: string, maxLength = 120) => {
-  return content
-    .replace(/[#*`_\[\]]/g, '')
-    .substring(0, maxLength)
-}
-
-onMounted(() => {
-  loadDashboardData()
+onMounted(async () => {
+  await loadDiaries({ limit: 8 })
+  const days = calculateLoveDays()
+  loveDays.value = days
+  nextMilestone.value = calculateNextMilestone(days)
 })
 </script>
 
 <template>
-  <div class="dashboard">
-    <div class="welcome-section">
-      <h1 class="welcome-title">欢迎回来 💞</h1>
-      <p class="welcome-date">
-        今天是 {{ dayjs().format('YYYY年M月D日') }}，记录美好时光
-      </p>
-    </div>
+  <div class="dashboard-page">
+    <section class="cinema-hero reveal-in" aria-labelledby="welcome-title">
+      <div class="hero-copy">
+        <p class="romance-kicker">LoveZS Private Cinema</p>
+        <h1 class="hero-title" id="welcome-title">
+          把我们的故事，放在今晚最亮的银幕中央
+        </h1>
+        <p class="hero-subtitle">
+          今天是 {{ dayjs().format('YYYY年M月D日') }}。每一张照片、每一篇日记，都在为下一幕温柔预告。
+        </p>
 
-    <div class="stats-grid">
-      <div class="stat-card stat-card-pink">
-        <div class="stat-content">
-          <div class="stat-info">
-            <p class="stat-label">日记总数</p>
-            <p class="stat-value">{{ diaryCount }}</p>
+        <div class="hero-metrics" aria-label="恋爱数据概览">
+          <div class="metric-card love-days">
+            <Heart :size="15" fill="currentColor" />
+            <span class="metric-label">恋爱</span>
+            <strong>{{ loveDays }}</strong>
+            <span>天</span>
           </div>
-          <BookOpen :size="40" class="stat-icon" />
+          <div class="metric-card milestone">
+            <CalendarHeart :size="15" />
+            <span class="metric-label">下一座里程碑</span>
+            <strong>{{ nextMilestone?.remaining ?? 0 }}</strong>
+            <span>天后</span>
+          </div>
+          <div class="metric-card diary-total">
+            <span class="metric-dot"></span>
+            <span>日记 {{ totalCount }} 篇</span>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <RouterLink to="/diaries/new" class="btn-primary">
+            <Plus :size="16" />
+            写下新一幕
+          </RouterLink>
+          <RouterLink to="/diaries" class="btn-secondary">
+            <Images :size="16" />
+            浏览胶片
+          </RouterLink>
         </div>
       </div>
 
-      <div class="stat-card stat-card-purple">
-        <div class="stat-content">
-          <div class="stat-info">
-            <p class="stat-label">恋爱天数</p>
-            <p class="stat-value">{{ loveDays }}</p>
+      <div class="poster-stage" aria-label="最近回忆影像">
+        <RouterLink
+          :to="heroFrame.diary ? `/diaries/${heroFrame.diary.id}` : '/diaries/new'"
+          class="main-poster cinematic-frame"
+          :style="posterStyle(0)"
+        >
+          <template v-if="heroFrame.media">
+            <video
+              v-if="isVideo(heroFrame.media)"
+              :src="resolveMediaUrl(heroFrame.media.url || '')"
+              class="poster-media"
+              muted
+              loop
+              playsinline
+              preload="metadata"
+            />
+            <img
+              v-else
+              :src="resolveMediaUrl(heroFrame.media.url || heroFrame.media.thumbnail_url || '')"
+              :alt="heroFrame.media.original_name || heroFrame.title"
+              class="poster-media"
+            />
+          </template>
+          <div v-else class="poster-fallback">
+            <Film :size="44" />
           </div>
-          <Heart :size="40" class="stat-icon" />
+          <div class="poster-badge">
+            <span>{{ loveDays }} 天</span>
+          </div>
+          <div class="poster-overlay">
+            <span class="poster-label">Tonight's Feature</span>
+            <h2>{{ heroFrame.title }}</h2>
+            <p>{{ heroFrame.caption }}</p>
+          </div>
+        </RouterLink>
+      </div>
+    </section>
+
+    <section class="snippet-section" aria-labelledby="snippet-title">
+      <div class="section-head compact">
+        <div>
+          <p class="romance-kicker">Romantic Cuts</p>
+          <h2 class="section-title" id="snippet-title">浪漫片段</h2>
         </div>
+        <p class="section-note">那些没说出口的喜欢，都藏在一帧一帧的光里。</p>
       </div>
 
-      <div class="stat-card stat-card-amber">
-        <div class="stat-content">
-          <div class="stat-info">
-            <p class="stat-label">下一个整百天</p>
-            <p class="stat-value" v-if="nextMilestone">
-              {{ nextMilestone.remaining }}天
-            </p>
-            <p class="stat-subtitle" v-if="nextMilestone">
-              距离 {{ nextMilestone.target }} 天
-            </p>
+      <div class="snippet-grid">
+        <RouterLink
+          v-for="(frame, index) in snippetFrames"
+          :key="frame.id"
+          :to="frame.diary ? `/diaries/${frame.diary.id}` : '/diaries/new'"
+          class="snippet-card cinematic-card"
+          :style="posterStyle(index + 1)"
+        >
+          <template v-if="frame.media">
+            <video
+              v-if="isVideo(frame.media)"
+              :src="resolveMediaUrl(frame.media.url || '')"
+              class="poster-media"
+              muted
+              preload="metadata"
+            />
+            <img
+              v-else
+              :src="resolveMediaUrl(frame.media.url || frame.media.thumbnail_url || '')"
+              :alt="frame.media.original_name || frame.title"
+              class="poster-media"
+              loading="lazy"
+            />
+          </template>
+          <div v-else class="poster-fallback small">
+            <Sparkles :size="24" />
           </div>
-          <Calendar :size="40" class="stat-icon" />
+          <div class="mini-caption">
+            <strong>{{ frame.title }}</strong>
+            <span>{{ frame.date ? dayjs(frame.date).format('M月D日') : '待记录' }}</span>
+          </div>
+        </RouterLink>
+      </div>
+    </section>
+
+    <section class="recent-section">
+      <div class="section-head">
+        <div>
+          <p class="romance-kicker">Recent Scenes</p>
+          <h2 class="section-title">最近日记</h2>
         </div>
-      </div>
-    </div>
-
-    <div class="card quick-actions">
-      <h2 class="section-title">快速操作</h2>
-      <div class="actions-grid">
-        <RouterLink to="/diaries/new" class="action-card action-card-pink">
-          <div class="action-icon action-icon-pink">
-            <Plus :size="20" />
-          </div>
-          <div class="action-text">
-            <p class="action-title">写日记</p>
-            <p class="action-subtitle">记录今天</p>
-          </div>
-        </RouterLink>
-
-        <RouterLink to="/diaries" class="action-card action-card-purple">
-          <div class="action-icon action-icon-purple">
-            <BookOpen :size="20" />
-          </div>
-          <div class="action-text">
-            <p class="action-title">看日记</p>
-            <p class="action-subtitle">浏览记录</p>
-          </div>
-        </RouterLink>
-
-        <RouterLink to="/countdowns" class="action-card action-card-amber">
-          <div class="action-icon action-icon-amber">
-            <Calendar :size="20" />
-          </div>
-          <div class="action-text">
-            <p class="action-title">重要日</p>
-            <p class="action-subtitle">重要日子</p>
-          </div>
-        </RouterLink>
-      </div>
-    </div>
-
-    <div class="card recent-diaries">
-      <div class="section-header">
-        <h2 class="section-title">最近日记</h2>
-        <RouterLink to="/diaries" class="view-all-link">
-          查看全部 →
+        <RouterLink to="/diaries" class="view-all">
+          查看全部 <ArrowRight :size="14" />
         </RouterLink>
       </div>
 
-      <div v-if="isLoading" class="loading-container">
+      <div v-if="isLoading" class="loading-container glass-card">
         <div class="spinner"></div>
       </div>
 
-      <div v-else-if="diaries.length > 0" class="diary-grid">
+      <div v-else-if="recentDiaries.length > 0" class="diary-grid">
         <RouterLink
-          v-for="diary in diaries"
+          v-for="(diary, index) in recentDiaries"
           :key="diary.id"
           :to="`/diaries/${diary.id}`"
-          class="diary-card"
+          class="diary-card cinematic-card"
+          :style="posterStyle(index + 3)"
         >
-          <!-- 封面图 -->
-          <div v-if="diary.attached_photos?.length" class="card-cover">
-            <template v-if="getFirstImage(diary.attached_photos)">
+          <div class="card-cover">
+            <template v-if="getDiaryCover(diary)">
               <video
-                v-if="isVideo(getFirstImage(diary.attached_photos)!)"
-                :src="resolveMediaUrl(getFirstImage(diary.attached_photos)!.url || '')"
+                v-if="isVideo(getDiaryCover(diary)!)"
+                :src="resolveMediaUrl(getDiaryCover(diary)!.url || '')"
                 class="cover-image"
                 muted
                 preload="metadata"
               />
               <img
                 v-else
-                :src="resolveMediaUrl(getFirstImage(diary.attached_photos)!.url || getFirstImage(diary.attached_photos)!.thumbnail_url || '')"
-                :alt="getFirstImage(diary.attached_photos)!.original_name"
+                :src="resolveMediaUrl(getDiaryCover(diary)!.url || getDiaryCover(diary)!.thumbnail_url || '')"
+                :alt="getDiaryCover(diary)!.original_name || diary.title"
                 class="cover-image"
+                loading="lazy"
               />
             </template>
-            <span v-if="getFirstImage(diary.attached_photos) && isVideo(getFirstImage(diary.attached_photos)!)" class="video-badge">▶</span>
-          </div>
-          <!-- 文字区 -->
-          <div class="card-body">
-            <div class="card-title-row">
-              <span class="diary-mood">{{ getMoodEmoji(diary.mood) }}</span>
-              <h3 class="diary-title">
-                <span v-if="!diary.is_public" class="private-badge">🔒</span>
-                {{ diary.title }}
-              </h3>
+            <div v-else class="cover-fallback">
+              <Sparkles :size="30" />
             </div>
-            <p class="diary-preview">{{ stripMarkdown(diary.content) }}...</p>
-            <div class="card-footer">
-              <span class="category-badge">{{ diary.category }}</span>
-              <span class="diary-date">
-                {{ dayjs(diary.date).format('M月D日') }}
-                <template v-if="diary.created_by_details"> · {{ diary.created_by_details.username }}</template>
-              </span>
+          </div>
+          <div class="card-body">
+            <h3 class="diary-title">
+              <Heart :size="15" fill="currentColor" />
+              {{ diary.title }}
+            </h3>
+            <p class="diary-line">
+              {{ diary.content?.replace(/[#*`_[\]]/g, '').slice(0, 56) || '这一天，也值得被温柔收藏。' }}
+            </p>
+            <div class="diary-meta">
+              <span class="tag">{{ diary.category || '生活' }}</span>
+              <span>{{ dayjs(diary.date || diary.created_at).format('M月D日') }}</span>
             </div>
           </div>
         </RouterLink>
       </div>
 
-      <div v-else class="empty-state">
-        <div class="empty-icon">📝</div>
-        <h3 class="empty-title">还没有日记</h3>
-        <p class="empty-text">开始记录美好时光吧</p>
+      <div v-else class="empty-state glass-card">
+        <Sparkles :size="38" />
+        <h3>还没有日记</h3>
+        <p>先写下第一幕，今晚的银幕就会亮起来。</p>
         <RouterLink to="/diaries/new" class="btn-primary">
-          <Plus :size="16" class="mr-1" />
+          <Plus :size="16" />
           写第一篇日记
         </RouterLink>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.dashboard {
+.dashboard-page {
   width: 100%;
 }
 
-.welcome-section {
-  margin-bottom: 1.5rem;
-  padding: 1.5rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(130deg, #fff3f8 0%, #ffeaf3 50%, #fff7fb 100%);
-  box-shadow: var(--shadow-soft);
-}
-
-.welcome-title {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--text-primary);
-}
-
-.welcome-date {
-  margin: 0.5rem 0 0;
-  color: var(--text-secondary);
-}
-
-.stats-grid {
+.cinema-hero {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: clamp(1.35rem, 2.8vw, 2.6rem);
+  min-height: auto;
+  margin: calc(-1 * clamp(1rem, 2.5vw, 2rem)) calc(-1 * var(--page-px)) 1.5rem;
+  padding: clamp(1.8rem, 4.2vw, 3.6rem) var(--page-px) clamp(1.8rem, 4vw, 3.2rem);
+  overflow: hidden;
+  isolation: isolate;
 }
 
-.stat-card {
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  color: #fff;
-  box-shadow: var(--shadow-soft);
-  transition: transform var(--dur-fast), box-shadow var(--dur-base);
+.cinema-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(5, 5, 11, 0.92), rgba(5, 5, 11, 0.34) 52%, rgba(5, 5, 11, 0.78)),
+    radial-gradient(circle at 72% 18%, rgba(255, 154, 200, 0.24), transparent 26%),
+    radial-gradient(circle at 45% 74%, rgba(245, 200, 143, 0.12), transparent 32%),
+    linear-gradient(135deg, #07060d, #281329 56%, #080712);
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+.cinema-hero::after {
+  content: '';
+  position: absolute;
+  inset: -5%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 18% 16%, rgba(255,255,255,.76), transparent 2px),
+    radial-gradient(1px 1px at 48% 10%, rgba(245,200,143,.62), transparent 2px),
+    radial-gradient(1.5px 1.5px at 88% 22%, rgba(255,154,200,.7), transparent 3px),
+    linear-gradient(112deg, transparent 0 50%, rgba(255, 154, 200, 0.18) 61%, transparent 72%);
+  opacity: 0.75;
+  animation: filmDrift 8s ease-in-out infinite alternate;
 }
 
-.stat-card-pink {
-  background: linear-gradient(135deg, #f58fb2 0%, #f47194 100%);
+.hero-copy {
+  display: grid;
+  justify-items: start;
+  width: min(100%, 1280px);
+  max-width: none;
+  margin: 0 auto;
 }
 
-.stat-card-purple {
-  background: linear-gradient(135deg, #9b8cff 0%, #7c6ef6 100%);
-}
-
-.stat-card-amber {
-  background: linear-gradient(135deg, #f6b85c 0%, #f19f3e 100%);
-}
-
-.stat-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.stat-label {
+.hero-title {
   margin: 0;
-  opacity: 0.92;
-  font-size: 0.875rem;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: clamp(2.45rem, 4.3vw, 4.9rem);
+  font-weight: 700;
+  line-height: 1.08;
+  text-wrap: balance;
+  text-shadow: 0 18px 60px rgba(255, 154, 200, 0.22);
 }
 
-.stat-value {
-  margin: 0.2rem 0 0;
-  font-size: 2rem;
-  font-weight: 700;
+.hero-subtitle {
+  margin: 1.2rem 0 0;
+  color: var(--ink-soft);
+  font-size: clamp(0.98rem, 1.3vw, 1.08rem);
+  line-height: 1.85;
+  max-width: 760px;
+}
+
+.hero-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.25rem;
+}
+
+.metric-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-height: 34px;
+  padding: 0.38rem 0.68rem;
+  border: 1px solid rgba(245, 200, 143, 0.14);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(14px);
+}
+
+.metric-card svg {
+  color: var(--gold);
+  flex: 0 0 auto;
+}
+
+.metric-card strong {
+  color: #fff;
+  font-family: Georgia, var(--font-serif);
+  font-size: 1.12rem;
   line-height: 1;
 }
 
-.stat-subtitle {
-  margin: 0.2rem 0 0;
-  opacity: 0.82;
-  font-size: 0.875rem;
+.metric-label {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
 }
 
-.stat-icon {
-  opacity: 0.82;
+.love-days {
+  border-color: rgba(255, 154, 200, 0.28);
+  color: #fff1f8;
 }
 
-.card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+.diary-total {
+  padding-inline: 0.58rem;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
-.section-header {
+.metric-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--rose-bright);
+  box-shadow: 0 0 14px rgba(255, 154, 200, 0.8);
+}
+
+.hero-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-top: 1.45rem;
 }
 
-.section-title {
-  margin: 0;
-  font-size: 1.05rem;
-  color: var(--text-primary);
-}
-
-.view-all-link {
-  color: var(--pink-500);
-  text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.actions-grid {
+.poster-stage {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+  justify-self: center;
+  width: min(100%, 1040px);
+  min-width: 0;
+  perspective: 1200px;
 }
 
-.action-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.8rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-soft);
-  background: #fff;
-  text-decoration: none;
-  color: inherit;
-  transition: transform var(--dur-fast), box-shadow var(--dur-base), border-color var(--dur-base);
+.main-poster,
+.snippet-card {
+  animation: revealIn 620ms ease both;
+  animation-delay: var(--poster-delay);
 }
 
-.action-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-soft);
-  border-color: var(--border-strong);
+.main-poster {
+  min-height: clamp(460px, 42vw, 680px);
+  aspect-ratio: 16 / 9.8;
+  transform: none;
+  transition: transform var(--dur-slow) ease, box-shadow var(--dur-slow) ease;
 }
 
-.action-icon {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.main-poster:hover {
+  transform: translateY(-4px) scale(1.006);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
-.action-icon-pink {
-  background: #ffe8f1;
-  color: #d65a88;
+.poster-media,
+.poster-fallback {
+  width: 100%;
+  height: 100%;
 }
 
-.action-icon-purple {
-  background: #ece9ff;
-  color: #786be8;
+.poster-media {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  filter: saturate(0.95) contrast(1.05);
+  transition: transform 700ms ease, filter 700ms ease;
 }
 
-.action-icon-amber {
-  background: #fff1dd;
-  color: #c88228;
+.main-poster:hover .poster-media,
+.snippet-card:hover .poster-media {
+  transform: scale(1.045);
+  filter: saturate(1.08) contrast(1.08);
 }
 
-.action-title {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-}
-
-.action-subtitle {
-  margin: 0.15rem 0 0;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.loading-container {
-  min-height: 160px;
+.poster-fallback {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
+  color: rgba(245, 200, 143, 0.85);
+  background:
+    radial-gradient(circle at 42% 24%, hsl(var(--poster-hue) 78% 62% / 0.34), transparent 30%),
+    radial-gradient(circle at 78% 72%, rgba(245, 200, 143, 0.2), transparent 30%),
+    linear-gradient(145deg, #221329, #07070d 72%);
 }
 
-.spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 2px solid #f4dbe7;
-  border-top-color: var(--pink-500);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.poster-fallback.small {
+  color: rgba(255, 154, 200, 0.86);
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.poster-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 0.78rem;
+  border: 1px solid rgba(245, 200, 143, 0.24);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(7, 7, 13, 0.48);
+  font-size: 0.78rem;
+  font-weight: 900;
+  backdrop-filter: blur(14px);
+}
+
+.poster-overlay {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  padding: clamp(1.25rem, 3vw, 2.4rem);
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.72) 38%, rgba(0, 0, 0, 0.92));
+}
+
+.poster-label {
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.poster-overlay h2 {
+  margin: 0.45rem 0 0.45rem;
+  color: #fff;
+  font-family: var(--font-serif);
+  font-size: clamp(1.55rem, 3vw, 2.55rem);
+}
+
+.poster-overlay p {
+  max-width: 540px;
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.snippet-section,
+.recent-section {
+  padding-bottom: 1.5rem;
+}
+
+.snippet-section {
+  margin-top: 0.35rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-head.compact {
+  align-items: center;
+}
+
+.section-note {
+  max-width: 420px;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+
+.snippet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.4vw, 1.1rem);
+}
+
+.snippet-card {
+  min-height: clamp(138px, 13vw, 188px);
+  transition: transform var(--dur-slow) ease, border-color var(--dur-slow) ease, box-shadow var(--dur-slow) ease;
+}
+
+.snippet-card:hover {
+  transform: translateY(-5px) scale(1.01);
+  border-color: var(--line-strong);
+}
+
+.mini-caption {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78));
+}
+
+.mini-caption strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-caption span {
+  color: var(--gold);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--gold);
+  font-size: 0.875rem;
+  font-weight: 800;
 }
 
 .diary-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.85rem, 1.5vw, 1.2rem);
 }
 
 .diary-card {
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  background: #fff;
-  text-decoration: none;
-  color: inherit;
-  overflow: hidden;
-  transition: transform var(--dur-fast), box-shadow var(--dur-base), border-color var(--dur-base);
+  min-height: 310px;
+  animation: revealIn 540ms ease both;
+  animation-delay: var(--poster-delay);
+  transition: transform var(--dur-slow) ease, border-color var(--dur-slow) ease, box-shadow var(--dur-slow) ease;
 }
 
 .diary-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(217, 117, 154, 0.15);
-  border-color: var(--border-strong);
+  transform: translateY(-5px);
 }
 
 .card-cover {
-  width: 100%;
-  overflow: hidden;
   position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.cover-image,
+.cover-fallback {
+  width: 100%;
+  height: 100%;
 }
 
 .cover-image {
-  width: 100%;
-  aspect-ratio: 16 / 9;
   object-fit: cover;
-  display: block;
+  transition: transform 700ms ease;
 }
 
-.video-badge {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+.diary-card:hover .cover-image {
+  transform: scale(1.05);
+}
+
+.cover-fallback {
+  display: grid;
+  place-items: center;
+  color: rgba(245, 200, 143, 0.8);
+  background:
+    radial-gradient(circle at 48% 32%, hsl(var(--poster-hue) 72% 60% / 0.28), transparent 44%),
+    linear-gradient(135deg, rgba(46, 28, 55, 0.95), rgba(8, 8, 14, 0.98));
 }
 
 .card-body {
-  padding: 0.85rem;
-}
-
-.card-title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.diary-mood {
-  font-size: 1.15rem;
-  flex-shrink: 0;
+  padding: 1rem;
 }
 
 .diary-title {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.55rem;
+  color: #fff8fc;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
-.private-badge {
-  margin-right: 0.25rem;
-  font-size: 0.85rem;
+.diary-title svg {
+  color: var(--rose-bright);
 }
 
-.diary-preview {
-  margin: 0.4rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-  line-height: 1.55;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.diary-line {
+  min-height: 3.2em;
+  margin: 0 0 0.85rem;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.6;
 }
 
-.card-footer {
+.diary-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 0.6rem;
-  gap: 0.5rem;
-}
-
-.category-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  background: #ffeaf3;
-  color: #a55674;
-  flex-shrink: 0;
-}
-
-.diary-date {
-  color: #a38998;
-  font-size: 0.75rem;
-  white-space: nowrap;
+  gap: 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .empty-state {
-  text-align: center;
-  padding: 2rem 1rem;
+  gap: 0.8rem;
+  padding: 3rem 1rem;
 }
 
-.empty-icon {
-  font-size: 2.1rem;
+.empty-state h3,
+.empty-state p {
+  margin: 0;
 }
 
-.empty-title {
-  margin: 0.5rem 0 0;
-  color: var(--text-primary);
+.empty-state svg {
+  color: var(--gold);
 }
 
-.empty-text {
-  margin: 0.35rem 0 1rem;
-  color: var(--text-secondary);
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.62rem 1.2rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--pink-500) 0%, var(--rose-500) 100%);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  box-shadow: 0 8px 16px rgba(217, 117, 154, 0.26);
-  transition: transform var(--dur-fast), box-shadow var(--dur-base), filter var(--dur-base);
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(217, 117, 154, 0.32);
-  filter: brightness(1.02);
-}
-
-.mr-1 {
-  margin-right: 0.35rem;
-}
-
-@media (min-width: 768px) {
-  .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
+@media (max-width: 1180px) {
+  .hero-copy {
+    width: min(100%, 860px);
   }
 
-  .actions-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .main-poster {
+    min-height: 520px;
   }
+}
 
+@media (max-width: 1024px) {
+  .snippet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
   .diary-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .cinema-hero {
+    margin: -1rem -1rem 1.25rem;
+    padding: 1.25rem 1rem 1.5rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-metrics {
+    gap: 0.45rem;
+  }
+
+  .metric-card {
+    max-width: 100%;
+  }
+
+  .main-poster {
+    min-height: clamp(340px, 104vw, 500px);
+    aspect-ratio: 4 / 5;
+  }
+
+  .poster-badge {
+    top: 14px;
+    right: 14px;
+  }
+
+  .snippet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .snippet-card {
+    min-height: 136px;
+  }
+
+  .section-head,
+  .section-head.compact {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 430px) {
+  .hero-title {
+    font-size: clamp(2rem, 11vw, 2.5rem);
+  }
+
+  .snippet-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
-

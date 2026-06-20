@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LoveZs · 墨韵东方版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Ma+Shan+Zheng&family=Cormorant+Garamond:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a1612;
+    --bg-2: #221d18;
+    --paper: #f2e8d5;
+    --paper-2: #e8dcc4;
+    --ink: #1a1612;
+    --gold: #c9a86a;
+    --gold-bright: #e6c889;
+    --gold-deep: #9c7d44;
+    --vermilion: #b5392f;
+    --muted: #8a7a5f;
+    --line: rgba(201,168,106,0.25);
+    --serif: 'Noto Serif SC', 'Songti SC', serif;
+    --brush: 'Ma Shan Zheng', cursive;
+    --en: 'Cormorant Garamond', serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(201,168,106,0.08), transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(181,57,47,0.06), transparent 50%);
+    color: var(--paper);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.8 0 0 0 0 0.65 0 0 0 0 0.4 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+  /* 侧边栏 */
+  .sidebar {
+    width: 248px; flex-shrink: 0; position: fixed; top:0; left:0; bottom:0;
+    background: linear-gradient(180deg, #1f1a15, #16120e);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 2.2rem 1.2rem; z-index: 10;
+  }
+  .brand {
+    text-align: center; padding-bottom: 2rem; border-bottom: 1px solid var(--line);
+  }
+  .brand-cn {
+    font-family: var(--brush); font-size: 2.4rem; color: var(--gold-bright);
+    line-height: 1; letter-spacing: 0.15em;
+    text-shadow: 0 0 24px rgba(201,168,106,0.3);
+  }
+  .brand-en {
+    font-family: var(--en); font-style: italic; font-size: 0.7rem;
+    letter-spacing: 0.4em; color: var(--gold-deep); margin-top: 0.5rem;
+    text-transform: uppercase;
+  }
+  .nav { flex: 1; margin-top: 2rem; display: flex; flex-direction: column; gap: 0.2rem; }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.9rem; padding: 0.85rem 1rem;
+    color: var(--muted); font-size: 0.92rem; cursor: pointer; position: relative;
+    transition: all 0.3s; border-radius: 2px;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: var(--gold-bright); background: rgba(201,168,106,0.06); }
+  .nav-item.active {
+    color: var(--gold-bright); background: linear-gradient(90deg, rgba(201,168,106,0.12), transparent);
+    border-left-color: var(--gold);
+  }
+  .nav-cn { font-family: var(--serif); font-weight: 500; }
+  .nav-item.active .nav-cn { color: var(--gold-bright); }
+  .nav-badge {
+    margin-left: auto; background: var(--vermilion); color: var(--paper);
+    font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; font-weight: 500;
+  }
+  .sidebar-foot {
+    padding-top: 1.5rem; border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--vermilion));
+    color: var(--paper); display: flex; align-items: center; justify-content: center;
+    font-family: var(--brush); font-size: 1.2rem;
+    border: 1px solid var(--gold);
+  }
+  .foot-name { font-size: 0.85rem; color: var(--gold-bright); font-weight: 500; }
+  .foot-mail { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+
+  /* 主内容 */
+  .main { flex: 1; margin-left: 248px; padding: 3rem 4rem 4rem; max-width: 1080px; }
+
+  /* Hero - 竖排诗感 */
+  .hero { margin-bottom: 2.5rem; display: flex; align-items: flex-start; gap: 2.5rem; }
+  .hero-seal {
+    flex-shrink: 0; width: 78px; height: 78px;
+    background: var(--vermilion); color: var(--paper);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--brush); font-size: 1.5rem; line-height: 1.1; letter-spacing: 0.05em;
+    border-radius: 4px; box-shadow: 0 4px 16px rgba(181,57,47,0.3);
+    transform: rotate(-3deg);
+  }
+  .hero-seal span { display: block; }
+  .hero-body { flex: 1; }
+  .hero-eyebrow {
+    font-family: var(--en); font-style: italic; font-size: 0.78rem;
+    color: var(--gold); letter-spacing: 0.3em; margin-bottom: 0.8rem;
+    text-transform: uppercase;
+  }
+  .hero-title {
+    font-family: var(--brush); font-size: 2.6rem; font-weight: 400;
+    color: var(--paper); line-height: 1.35; letter-spacing: 0.08em;
+  }
+  .hero-title .accent { color: var(--vermilion); }
+  .hero-date {
+    margin-top: 0.9rem; font-family: var(--serif); font-size: 0.85rem;
+    color: var(--muted); letter-spacing: 0.15em;
+  }
+
+  /* 主特色卡：情字印章 */
+  .feature {
+    background:
+      linear-gradient(135deg, rgba(242,232,213,0.97), rgba(232,220,196,0.92));
+    color: var(--ink); border-radius: 4px; padding: 2.5rem 3rem;
+    margin-bottom: 2.5rem; display: flex; align-items: center;
+    justify-content: space-between; gap: 2rem; position: relative; overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+  }
+  .feature::before {
+    content: '情'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+    font-family: var(--brush); font-size: 18rem; color: rgba(181,57,47,0.06);
+    line-height: 1; pointer-events: none;
+  }
+  .feature::after {
+    content: ''; position: absolute; left: 1rem; top: 1rem; right: 1rem; bottom: 1rem;
+    border: 1px solid rgba(181,57,47,0.2); pointer-events: none; border-radius: 2px;
+  }
+  .feature-left { position: relative; z-index: 1; }
+  .feature-label {
+    font-family: var(--en); font-style: italic; font-size: 0.72rem;
+    color: var(--gold-deep); letter-spacing: 0.32em; text-transform: uppercase;
+    margin-bottom: 0.7rem;
+  }
+  .feature-days {
+    font-family: var(--brush); font-size: 5rem; line-height: 0.9;
+    color: var(--vermilion); letter-spacing: 0.02em;
+    display: flex; align-items: baseline; gap: 0.4rem;
+  }
+  .feature-days .unit { font-family: var(--serif); font-size: 1.2rem; color: var(--ink); font-weight: 500; }
+  .feature-since { margin-top: 0.7rem; font-size: 0.82rem; color: var(--muted); }
+  .feature-since strong { color: var(--vermilion); font-weight: 500; }
+  .feature-divider {
+    width: 1px; height: 88px; background: linear-gradient(180deg, transparent, rgba(181,57,47,0.4), transparent);
+    position: relative; z-index: 1;
+  }
+  .feature-right { text-align: right; position: relative; z-index: 1; }
+  .feature-mile { font-family: var(--brush); font-size: 2.8rem; color: var(--gold-deep); line-height: 1; }
+  .feature-mile small { font-family: var(--serif); font-size: 0.95rem; color: var(--muted); }
+  .feature-mile-label { margin-top: 0.4rem; font-size: 0.78rem; color: var(--muted); letter-spacing: 0.1em; }
+  .feature-progress { width: 160px; height: 2px; background: rgba(181,57,47,0.15); margin: 0.7rem 0 0 auto; }
+  .feature-progress > span { display: block; height: 100%; width: 82%; background: var(--vermilion); }
+
+  /* 统计 */
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 3rem; }
+  .stat {
+    background: var(--bg-2); border: 1px solid var(--line);
+    padding: 1.4rem 1.5rem; border-radius: 3px; position: relative;
+    transition: all 0.3s;
+  }
+  .stat:hover { border-color: var(--gold); transform: translateY(-2px); }
+  .stat::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 24px; height: 2px; background: var(--gold);
+  }
+  .stat-label { font-family: var(--serif); font-size: 0.82rem; color: var(--muted); letter-spacing: 0.2em; margin-bottom: 0.7rem; }
+  .stat-val { font-family: var(--brush); font-size: 2.4rem; color: var(--gold-bright); line-height: 1; }
+  .stat-val .small { font-family: var(--serif); font-size: 0.95rem; color: var(--muted); }
+  .stat-sub { margin-top: 0.4rem; font-size: 0.74rem; color: var(--muted); font-family: var(--serif); }
+
+  /* 区块标题 */
+  .section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+  .section-title { font-family: var(--brush); font-size: 1.8rem; color: var(--paper); letter-spacing: 0.1em; }
+  .section-title .en { font-family: var(--en); font-style: italic; font-size: 0.95rem; color: var(--gold); margin-left: 0.7rem; letter-spacing: 0.1em; }
+  .section-link { font-family: var(--serif); font-size: 0.82rem; color: var(--gold); letter-spacing: 0.15em; cursor: pointer; }
+
+  /* 日记卡 */
+  .diary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.25rem; }
+  .diary-card {
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: 3px;
+    overflow: hidden; cursor: pointer; transition: all 0.35s; display: flex; flex-direction: column;
+  }
+  .diary-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.4); }
+  .card-cover { aspect-ratio: 16/10; overflow: hidden; position: relative; }
+  .card-cover img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.15) saturate(0.9); transition: transform 0.6s, filter 0.6s; }
+  .diary-card:hover .card-cover img { transform: scale(1.06); filter: sepia(0.05) saturate(1); }
+  .card-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(26,22,18,0.5)); }
+  .mood-chip {
+    position: absolute; top: 0.8rem; left: 0.8rem; z-index: 2;
+    background: rgba(26,22,18,0.75); border: 1px solid var(--gold);
+    color: var(--gold-bright); padding: 0.25rem 0.7rem; font-size: 0.7rem;
+    font-family: var(--serif); letter-spacing: 0.15em;
+  }
+  .card-body { padding: 1.2rem 1.3rem 1.3rem; flex: 1; display: flex; flex-direction: column; }
+  .card-title { font-family: var(--brush); font-size: 1.4rem; color: var(--paper); margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+  .card-excerpt { font-family: var(--serif); font-size: 0.84rem; color: var(--muted); line-height: 1.7; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+  .card-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 0.9rem; margin-top: 0.8rem; border-top: 1px solid var(--line); }
+  .card-cat { font-family: var(--serif); font-size: 0.72rem; color: var(--vermilion); letter-spacing: 0.25em; }
+  .card-meta { font-family: var(--en); font-style: italic; font-size: 0.78rem; color: var(--muted); }
+
+  .preview-bar { position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%); background: var(--bg); color: var(--paper); padding: 0.6rem 1.4rem; border-radius: 999px; font-size: 0.78rem; border: 1px solid var(--gold); z-index: 100; }
+  .preview-bar b { color: var(--gold-bright); }
+
+  @media (max-width: 860px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; padding: 2rem 1.25rem 5rem; }
+    .feature { flex-direction: column; gap: 1.5rem; text-align: center; }
+    .feature-divider { display: none; }
+    .feature-right { text-align: center; }
+    .feature-progress { margin: 0.7rem auto 0; }
+    .stats-row { grid-template-columns: 1fr; }
+    .diary-grid { grid-template-columns: 1fr; }
+    .hero { flex-direction: column; }
+    .hero-title { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cn">爱 · 笺</div>
+      <div class="brand-en">Love Zs</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active"><span class="nav-cn">首页</span></div>
+      <div class="nav-item"><span class="nav-cn">日记</span></div>
+      <div class="nav-item"><span class="nav-cn">重要日</span></div>
+      <div class="nav-item"><span class="nav-cn">消息</span><span class="nav-badge">3</span></div>
+      <div class="nav-item"><span class="nav-cn">设置</span></div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="avatar">鹤</div>
+      <div>
+        <div class="foot-name">Hnst</div>
+        <div class="foot-mail">2925537739@qq.com</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="hero">
+      <div class="hero-seal"><span>执</span><span>手</span></div>
+      <div class="hero-body">
+        <div class="hero-eyebrow">Our Story · 二零二三</div>
+        <h1 class="hero-title">愿得一心人<span class="accent">，</span>白首不相离</h1>
+        <p class="hero-date">丙午年 · 五月初一 · 夏至未至</p>
+      </div>
+    </section>
+
+    <section class="feature">
+      <div class="feature-left">
+        <div class="feature-label">相守 · Together</div>
+        <div class="feature-days">壹仟零拾<span class="unit">日</span></div>
+        <div class="feature-since">自 <strong>癸卯年八月初九</strong> 起</div>
+      </div>
+      <div class="feature-divider"></div>
+      <div class="feature-right">
+        <div class="feature-mile">玖拾<small>日</small></div>
+        <div class="feature-mile-label">距壹仟壹佰日</div>
+        <div class="feature-progress"><span></span></div>
+      </div>
+    </section>
+
+    <section class="stats-row">
+      <div class="stat">
+        <div class="stat-label">墨 · 日记</div>
+        <div class="stat-val">33<span class="small">篇</span></div>
+        <div class="stat-sub">落笔成诗</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">影 · 珍藏</div>
+        <div class="stat-val">142<span class="small">帧</span></div>
+        <div class="stat-sub">光影留痕</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">期 · 佳期</div>
+        <div class="stat-val">2<span class="small">个</span></div>
+        <div class="stat-sub">近在咫尺</div>
+      </div>
+    </section>
+
+    <div class="section-head">
+      <h2 class="section-title">近来笔墨<span class="en">Recent</span></h2>
+      <span class="section-link">览全卷 →</span>
+    </div>
+
+    <div class="diary-grid">
+      <article class="diary-card">
+        <div class="card-cover">
+          <img src="https://images.unsplash.com/photo-1529636798458-92182e662485?w=600&q=80" alt="">
+          <div class="mood-chip">喜</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">毕业照</h3>
+          <p class="card-excerpt">这一日终于到了。镜头所留，不只是我二人，更有那些未及出口的青春。</p>
+          <div class="card-foot"><span class="card-cat">生活</span><span class="card-meta">Jun 5</span></div>
+        </div>
+      </article>
+      <article class="diary-card">
+        <div class="card-cover">
+          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80" alt="">
+          <div class="mood-chip">悦</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">青岛之旅</h3>
+          <p class="card-excerpt">海风咸湿，啤酒微凉。与你同立栈桥之上，方知世间时光亦可如此缓慢。</p>
+          <div class="card-foot"><span class="card-cat">旅行</span><span class="card-meta">May 17</span></div>
+        </div>
+      </article>
+    </div>
+  </main>
+</div>
+<div class="preview-bar">✦ 这是 <b>墨韵东方版</b> 预览 · V1 / 5</div>
+</body>
+</html>
