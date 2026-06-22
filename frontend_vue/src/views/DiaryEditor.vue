@@ -7,7 +7,7 @@ import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
 import diaryService from '@/api/diary'
 import photoService from '@/api/photo'
-import { resolveMediaUrl, isVideo } from '@/utils/media'
+import { getMediaUrl, isVideo } from '@/utils/media'
 import { MOOD_EMOJIS, MOOD_LABELS, type CreateDiaryRequest, type Diary, type Mood, type Photo } from '@/types'
 
 const router = useRouter()
@@ -45,6 +45,63 @@ const moodOptions = Object.entries(MOOD_LABELS).map(([value, label]) => ({
 }))
 const categoryOptions = ['生活', '工作', '学习', '旅行', '美食', '运动', '娱乐', '其他']
 const selectedCount = computed(() => selectedPhotoIds.value.size)
+const uploadProgressText = ref('')
+
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024
+const MAX_BATCH_FILES = 8
+const MAX_BATCH_SIZE = 80 * 1024 * 1024
+
+const validateMediaFiles = (files: File[]) => {
+  const validFiles: File[] = []
+  const rejectedFiles: string[] = []
+
+  files.forEach((file) => {
+    const isImage = file.type.startsWith('image/')
+    const isVideoFile = file.type.startsWith('video/')
+
+    if (!isImage && !isVideoFile) {
+      rejectedFiles.push(`${file.name} 不是图片或视频`)
+      return
+    }
+
+    const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE
+    if (file.size > maxSize) {
+      rejectedFiles.push(`${file.name} 超过 ${isImage ? '10MB' : '100MB'}`)
+      return
+    }
+
+    validFiles.push(file)
+  })
+
+  return { validFiles, rejectedFiles }
+}
+
+const chunkFiles = (files: File[]) => {
+  const batches: File[][] = []
+  let currentBatch: File[] = []
+  let currentSize = 0
+
+  files.forEach((file) => {
+    const wouldExceedFiles = currentBatch.length >= MAX_BATCH_FILES
+    const wouldExceedSize = currentSize > 0 && currentSize + file.size > MAX_BATCH_SIZE
+
+    if (wouldExceedFiles || wouldExceedSize) {
+      batches.push(currentBatch)
+      currentBatch = []
+      currentSize = 0
+    }
+
+    currentBatch.push(file)
+    currentSize += file.size
+  })
+
+  if (currentBatch.length) {
+    batches.push(currentBatch)
+  }
+
+  return batches
+}
 
 const loadDiaryForEdit = async () => {
   if (!isEditMode.value) return
@@ -80,22 +137,40 @@ const loadDiaryForEdit = async () => {
 const uploadMediaFiles = async (files: File[]) => {
   if (!files.length) return
 
+  const { validFiles, rejectedFiles } = validateMediaFiles(files)
+  if (rejectedFiles.length) {
+    uiStore.showToast(`已跳过 ${rejectedFiles.length} 个文件：${rejectedFiles[0]}`, 'warning')
+  }
+  if (!validFiles.length) return
+
+  const batches = chunkFiles(validFiles)
+  let uploadedCount = 0
+
   isUploading.value = true
   try {
-    const uploadFormData = new FormData()
-    files.forEach(file => uploadFormData.append('photos', file))
-    const response = await photoService.uploadPhotos(uploadFormData)
-    const newPhotos = response.photos || []
-    uploadedPhotos.value = [...uploadedPhotos.value, ...newPhotos]
-    const ids = new Set(formData.value.photo_ids || [])
-    newPhotos.forEach(photo => ids.add(photo.id))
-    formData.value.photo_ids = Array.from(ids)
-    uiStore.showToast(`已上传 ${newPhotos.length} 个文件`, 'success')
+    for (const [index, batch] of batches.entries()) {
+      uploadProgressText.value = batches.length > 1
+        ? `正在上传第 ${index + 1}/${batches.length} 批`
+        : '上传中...'
+
+      const uploadFormData = new FormData()
+      batch.forEach(file => uploadFormData.append('photos', file))
+      const response = await photoService.uploadPhotos(uploadFormData)
+      const newPhotos = response.photos || []
+      uploadedPhotos.value = [...uploadedPhotos.value, ...newPhotos]
+      const ids = new Set(formData.value.photo_ids || [])
+      newPhotos.forEach(photo => ids.add(photo.id))
+      formData.value.photo_ids = Array.from(ids)
+      uploadedCount += newPhotos.length
+    }
+
+    uiStore.showToast(`已上传 ${uploadedCount} 个文件`, 'success')
   } catch (error) {
     console.error('Upload media error:', error)
     uiStore.showToast('文件上传失败，请稍后重试', 'error')
   } finally {
     isUploading.value = false
+    uploadProgressText.value = ''
   }
 }
 
@@ -312,7 +387,7 @@ onMounted(loadDiaryForEdit)
           <input id="diary-photo-input" type="file" accept="image/*,video/*" multiple class="photo-input" @change="handleSelectPhotos" />
           <label for="diary-photo-input" class="btn-upload" :class="{ disabled: isUploading }">
             <Upload :size="16" />
-            {{ isUploading ? '上传中...' : '选择图片或视频，让画面入镜' }}
+            {{ isUploading ? uploadProgressText || '上传中...' : '选择图片或视频，让画面入镜' }}
           </label>
         </div>
 
@@ -324,8 +399,8 @@ onMounted(loadDiaryForEdit)
             :class="{ selected: selectedPhotoIds.has(photo.id), 'select-mode': isSelectMode }"
             @click="isSelectMode ? togglePhotoSelect(photo.id) : undefined"
           >
-            <video v-if="isVideo(photo)" :src="resolveMediaUrl(photo.url || '')" class="attached-image" muted preload="metadata" />
-            <img v-else :src="resolveMediaUrl(photo.url || photo.thumbnail_url || '')" :alt="photo.original_name" class="attached-image" loading="lazy" />
+            <video v-if="isVideo(photo)" :src="getMediaUrl(photo, 'thumbnail')" class="attached-image" muted preload="metadata" />
+            <img v-else :src="getMediaUrl(photo, 'thumbnail')" :alt="photo.original_name" class="attached-image" loading="lazy" decoding="async" />
             <div v-if="isSelectMode" class="select-overlay">
               <span class="select-check">{{ selectedPhotoIds.has(photo.id) ? '✓' : '' }}</span>
             </div>

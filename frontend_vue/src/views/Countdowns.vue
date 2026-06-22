@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import { useCountdowns } from '@/composables/useCountdowns'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
+import { findNextMilestone } from '@/utils/milestones'
 import type { Countdown, CreateCountdownRequest } from '@/types'
 
 const { countdowns, loadCountdowns, createCountdown, updateCountdown, deleteCountdown } = useCountdowns()
@@ -18,8 +19,6 @@ const recurringMonth = ref<number | null>(null)
 const recurringDay = ref<number | null>(null)
 const isSubmitting = ref(false)
 const editingId = ref<number | null>(null)
-
-const milestones = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 3000, 5000, 10000]
 
 const daysInMonth = computed(() => {
   if (!recurringMonth.value) return 31
@@ -38,23 +37,7 @@ const sortedCountdowns = computed(() =>
   })
 )
 
-const longestPastCountdown = computed(() => {
-  const past = sortedCountdowns.value.filter(c => (c.days || 0) < 0)
-  if (!past.length) return null
-  return past.reduce((prev, curr) => (curr.absolute_days || 0) > (prev.absolute_days || 0) ? curr : prev)
-})
-
-const nextMilestone = computed(() => {
-  if (!longestPastCountdown.value) return null
-  const currentDays = longestPastCountdown.value.absolute_days || 0
-  const target = milestones.find(m => m > currentDays) ?? milestones[milestones.length - 1] ?? currentDays
-  return {
-    target,
-    currentDays,
-    remaining: target - currentDays,
-    progress: target > 0 ? Math.min((currentDays / target) * 100, 100) : 0,
-  }
-})
+const nextMilestone = computed(() => findNextMilestone(countdowns.value))
 
 const formatDateDisplay = (countdown: Countdown) => {
   if (countdown.is_recurring && countdown.recurring_month && countdown.recurring_day) {
@@ -239,9 +222,9 @@ onMounted(() => {
           下一个里程碑
         </h2>
         <p class="milestone-copy">
-          {{ longestPastCountdown?.title }} 已有
-          <strong>{{ nextMilestone.currentDays }}</strong> 天，距离 {{ nextMilestone.target }} 天还有
-          <strong>{{ nextMilestone.remaining }}</strong> 天，下一束追光已经在路上。
+          {{ nextMilestone.title }} 在
+          <strong>{{ nextMilestone.remaining }}</strong> 天后抵达，
+          就是 {{ dayjs(nextMilestone.targetDate).format('YYYY年M月D日') }}，下一束追光已经在路上。
         </p>
         <div class="progress-bar">
           <span :style="{ width: `${nextMilestone.progress}%` }"></span>

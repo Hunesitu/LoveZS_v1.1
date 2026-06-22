@@ -7,7 +7,7 @@ import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
 import { pinDiary, unpinDiary } from '@/api/diary'
-import { resolveMediaUrl, isVideo } from '@/utils/media'
+import { getMediaUrl, isVideo } from '@/utils/media'
 import { MOOD_EMOJIS, MOOD_LABELS, type Diary, type Mood, type Photo } from '@/types'
 
 const uiStore = useUiStore()
@@ -143,17 +143,18 @@ onMounted(refreshData)
           <template v-if="getFirstMedia(diary)">
             <video
               v-if="isVideo(getFirstMedia(diary)!)"
-              :src="resolveMediaUrl(getFirstMedia(diary)!.url || '')"
+              :src="getMediaUrl(getFirstMedia(diary), 'thumbnail')"
               class="cover-image"
               muted
               preload="metadata"
             />
             <img
               v-else
-              :src="resolveMediaUrl(getFirstMedia(diary)!.url || getFirstMedia(diary)!.thumbnail_url || '')"
+              :src="getMediaUrl(getFirstMedia(diary), 'thumbnail')"
               :alt="getFirstMedia(diary)!.original_name"
               class="cover-image"
               loading="lazy"
+              decoding="async"
             />
           </template>
           <div v-else class="cover-fallback">

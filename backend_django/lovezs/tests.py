@@ -1,8 +1,13 @@
+import tempfile
 from datetime import date
+from io import BytesIO
 from importlib import import_module
 
 from django.apps import apps as django_apps
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.test.utils import override_settings
+from PIL import Image
 
 from .models import Album, Diary, DiaryPhoto, DiaryTag, Photo
 from .serializers import DiaryCreateSerializer, DiarySerializer
@@ -127,3 +132,30 @@ class MediaCompatibilityTests(TestCase):
         migration_module.normalize_photo_url_backward(django_apps, None)
         photo.refresh_from_db()
         self.assertEqual(photo.url, '/uploads/legacy.jpg')
+
+
+class PhotoUploadDerivativeTests(TestCase):
+    def setUp(self):
+        self.media_root = tempfile.TemporaryDirectory()
+        self.addCleanup(self.media_root.cleanup)
+
+    def make_image_file(self):
+        buffer = BytesIO()
+        image = Image.new('RGB', (1200, 800), '#d95984')
+        image.save(buffer, format='JPEG')
+        buffer.seek(0)
+        return SimpleUploadedFile('memory.jpg', buffer.read(), content_type='image/jpeg')
+
+    def test_upload_should_create_compressed_and_thumbnail_images(self):
+        with override_settings(MEDIA_ROOT=self.media_root.name):
+            response = self.client.post(
+                '/api/photos/upload/',
+                {'photos': [self.make_image_file()]},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        photo_data = response.json()['data']['photos'][0]
+        self.assertTrue(photo_data['compressed_url'].startswith('/media/compressed/'))
+        self.assertTrue(photo_data['compressed_url'].endswith('.webp'))
+        self.assertTrue(photo_data['thumbnail_url'].startswith('/media/thumbnails/'))
+        self.assertTrue(photo_data['thumbnail_url'].endswith('.webp'))

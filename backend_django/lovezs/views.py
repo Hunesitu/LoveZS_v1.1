@@ -21,7 +21,6 @@ from django.db import transaction
 from django.http import FileResponse, JsonResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from PIL import Image
 from rest_framework import viewsets, filters, status, permissions
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -29,6 +28,7 @@ from rest_framework.response import Response
 
 from django.db.models import Q
 
+from .media_derivatives import generate_image_derivatives
 from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment, Notification
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
@@ -480,14 +480,10 @@ class PhotoViewSet(viewsets.ModelViewSet):
                 for chunk in uploaded_file.chunks():
                     target_file.write(chunk)
 
+            compressed_url = ''
             if is_image:
-                thumbnails_dir = os.path.join(settings.MEDIA_ROOT, 'thumbnails')
-                os.makedirs(thumbnails_dir, exist_ok=True)
-                thumbnail_path = os.path.join(thumbnails_dir, filename)
-
-                with Image.open(original_path) as image:
-                    image.thumbnail((400, 400))
-                    image.save(thumbnail_path)
+                derivatives = generate_image_derivatives(filename)
+                compressed_url = derivatives.compressed_url if derivatives else ''
 
             photo_data = {
                 'filename': filename,
@@ -497,6 +493,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
                 'size': uploaded_file.size,
                 'mimetype': uploaded_file.content_type,
                 'album': album.id,
+                'compressed_url': compressed_url,
             }
 
             serializer = PhotoCreateSerializer(data=photo_data)

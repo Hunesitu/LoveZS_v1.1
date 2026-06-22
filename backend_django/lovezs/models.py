@@ -14,6 +14,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.conf import settings
 from datetime import date
+from pathlib import Path
 
 
 # ========================================
@@ -220,6 +221,11 @@ class Photo(models.Model):
         """
         if not self.filename:
             return ''
+        base_name = self.filename.rsplit('.', 1)[0]
+        webp_filename = f'{base_name}.webp'
+        webp_path = Path(settings.MEDIA_ROOT) / 'thumbnails' / webp_filename
+        if webp_path.exists():
+            return f"{settings.MEDIA_URL}thumbnails/{webp_filename}"
         return f"{settings.MEDIA_URL}thumbnails/{self.filename}"
 
 

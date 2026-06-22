@@ -5,16 +5,19 @@ import { ArrowRight, CalendarHeart, Film, Heart, Images, Plus, Sparkles } from '
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import { useDiaries } from '@/composables/useDiaries'
-import { resolveMediaUrl, isVideo } from '@/utils/media'
+import { useCountdowns } from '@/composables/useCountdowns'
+import { getMediaUrl, isVideo } from '@/utils/media'
+import { findNextMilestone, inclusiveDaysSince, type MilestoneCandidate } from '@/utils/milestones'
 import type { Diary, Photo } from '@/types'
 
 dayjs.locale('zh-cn')
 
 const { diaries, isLoading, loadDiaries, totalCount } = useDiaries()
+const { countdowns, loadCountdowns } = useCountdowns()
 
 const LOVE_ANNIVERSARY = '2023-09-09'
 const loveDays = ref(0)
-const nextMilestone = ref<{ target: number; remaining: number } | null>(null)
+const nextMilestone = ref<MilestoneCandidate | null>(null)
 
 interface StoryFrame {
   id: string
@@ -43,17 +46,7 @@ const defaultFrame: StoryFrame = {
 }
 
 const calculateLoveDays = () => {
-  const anniversary = dayjs(LOVE_ANNIVERSARY).startOf('day')
-  const today = dayjs().startOf('day')
-  return today.diff(anniversary, 'day') + 1
-}
-
-const calculateNextMilestone = (currentDays: number) => {
-  const target = Math.ceil(currentDays / 100) * 100
-  return {
-    target,
-    remaining: target - currentDays,
-  }
+  return inclusiveDaysSince(LOVE_ANNIVERSARY)
 }
 
 const getDiaryCover = (diary: Diary) => diary.cover_media || diary.attached_photos?.[0] || null
@@ -93,10 +86,16 @@ const posterStyle = (index: number) => ({
 })
 
 onMounted(async () => {
-  await loadDiaries({ limit: 8 })
+  await Promise.all([
+    loadDiaries({ limit: 8 }),
+    loadCountdowns(),
+  ])
   const days = calculateLoveDays()
   loveDays.value = days
-  nextMilestone.value = calculateNextMilestone(days)
+  nextMilestone.value = findNextMilestone(countdowns.value, {
+    title: '恋爱纪念日',
+    date: LOVE_ANNIVERSARY,
+  })
 })
 </script>
 
@@ -123,7 +122,7 @@ onMounted(async () => {
             <CalendarHeart :size="15" />
             <span class="metric-label">下一座里程碑</span>
             <strong>{{ nextMilestone?.remaining ?? 0 }}</strong>
-            <span>天后</span>
+            <span>天后 · {{ nextMilestone ? dayjs(nextMilestone.targetDate).format('M月D日') : '待定' }}</span>
           </div>
           <div class="metric-card diary-total">
             <span class="metric-dot"></span>
@@ -152,7 +151,7 @@ onMounted(async () => {
           <template v-if="heroFrame.media">
             <video
               v-if="isVideo(heroFrame.media)"
-              :src="resolveMediaUrl(heroFrame.media.url || '')"
+              :src="getMediaUrl(heroFrame.media, 'display')"
               class="poster-media"
               muted
               loop
@@ -161,16 +160,20 @@ onMounted(async () => {
             />
             <img
               v-else
-              :src="resolveMediaUrl(heroFrame.media.url || heroFrame.media.thumbnail_url || '')"
+              :src="getMediaUrl(heroFrame.media, 'display')"
               :alt="heroFrame.media.original_name || heroFrame.title"
               class="poster-media"
+              width="1600"
+              height="980"
+              fetchpriority="high"
+              decoding="async"
             />
           </template>
           <div v-else class="poster-fallback">
             <Film :size="44" />
           </div>
           <div class="poster-badge">
-            <span>{{ loveDays }} 天</span>
+            <span>{{ nextMilestone?.title || `${loveDays} 天` }}</span>
           </div>
           <div class="poster-overlay">
             <span class="poster-label">Tonight's Feature</span>
@@ -201,17 +204,18 @@ onMounted(async () => {
           <template v-if="frame.media">
             <video
               v-if="isVideo(frame.media)"
-              :src="resolveMediaUrl(frame.media.url || '')"
+              :src="getMediaUrl(frame.media, 'thumbnail')"
               class="poster-media"
               muted
               preload="metadata"
             />
             <img
               v-else
-              :src="resolveMediaUrl(frame.media.url || frame.media.thumbnail_url || '')"
+              :src="getMediaUrl(frame.media, 'thumbnail')"
               :alt="frame.media.original_name || frame.title"
               class="poster-media"
               loading="lazy"
+              decoding="async"
             />
           </template>
           <div v-else class="poster-fallback small">
@@ -252,17 +256,18 @@ onMounted(async () => {
             <template v-if="getDiaryCover(diary)">
               <video
                 v-if="isVideo(getDiaryCover(diary)!)"
-                :src="resolveMediaUrl(getDiaryCover(diary)!.url || '')"
+                :src="getMediaUrl(getDiaryCover(diary), 'thumbnail')"
                 class="cover-image"
                 muted
                 preload="metadata"
               />
               <img
                 v-else
-                :src="resolveMediaUrl(getDiaryCover(diary)!.url || getDiaryCover(diary)!.thumbnail_url || '')"
+                :src="getMediaUrl(getDiaryCover(diary), 'thumbnail')"
                 :alt="getDiaryCover(diary)!.original_name || diary.title"
                 class="cover-image"
                 loading="lazy"
+                decoding="async"
               />
             </template>
             <div v-else class="cover-fallback">

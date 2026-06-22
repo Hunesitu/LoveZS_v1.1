@@ -48,3 +48,32 @@ export const resolveMediaUrl = (url?: string) => {
 
   return normalizedUrl
 }
+
+type MediaVariant = 'thumbnail' | 'display' | 'original'
+
+interface MediaLike {
+  url?: string
+  thumbnail_url?: string
+  compressed_url?: string
+  mimetype?: string
+}
+
+export const getMediaUrl = (media?: MediaLike | null, variant: MediaVariant = 'display') => {
+  if (!media) {
+    return ''
+  }
+
+  if (isVideo(media)) {
+    return resolveMediaUrl(media.url || '')
+  }
+
+  if (variant === 'thumbnail') {
+    return resolveMediaUrl(media.thumbnail_url || media.compressed_url || media.url || '')
+  }
+
+  if (variant === 'original') {
+    return resolveMediaUrl(media.url || media.compressed_url || media.thumbnail_url || '')
+  }
+
+  return resolveMediaUrl(media.compressed_url || media.thumbnail_url || media.url || '')
+}

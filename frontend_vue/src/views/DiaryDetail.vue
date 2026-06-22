@@ -18,7 +18,7 @@ import {
 import dayjs from 'dayjs'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
-import { resolveMediaUrl, isVideo } from '@/utils/media'
+import { getMediaUrl, isVideo } from '@/utils/media'
 import diaryService, { pinDiary, unpinDiary } from '@/api/diary'
 import { api } from '@/api/client'
 import { MOOD_EMOJIS, type Diary, type DiaryComment, type Photo } from '@/types'
@@ -286,17 +286,18 @@ onUnmounted(() => {
           >
             <video
               v-if="isVideo(photo)"
-              :src="resolveMediaUrl(photo.url || '')"
+              :src="getMediaUrl(photo, 'thumbnail')"
               class="photo-image"
               muted
               preload="metadata"
             />
             <img
               v-else
-              :src="resolveMediaUrl(photo.url || photo.thumbnail_url || '')"
+              :src="getMediaUrl(photo, 'thumbnail')"
               :alt="photo.original_name"
               class="photo-image"
               loading="lazy"
+              decoding="async"
             />
             <span v-if="isVideo(photo)" class="video-badge">▶</span>
           </button>
@@ -414,8 +415,8 @@ onUnmounted(() => {
         </button>
 
         <div class="preview-image-wrapper" :style="{ transform: `scale(${scale})` }">
-          <video v-if="isVideo(previewPhoto)" :src="resolveMediaUrl(previewPhoto.url || '')" class="preview-image" controls autoplay />
-          <img v-else :src="resolveMediaUrl(previewPhoto.url || previewPhoto.thumbnail_url || '')" :alt="previewPhoto.original_name" class="preview-image" />
+          <video v-if="isVideo(previewPhoto)" :src="getMediaUrl(previewPhoto, 'original')" class="preview-image" controls autoplay />
+          <img v-else :src="getMediaUrl(previewPhoto, 'original')" :alt="previewPhoto.original_name" class="preview-image" />
         </div>
 
         <button v-if="previewIndex < photoCount - 1" class="preview-nav preview-nav--next" type="button" aria-label="下一张" @click.stop="nextPhoto">

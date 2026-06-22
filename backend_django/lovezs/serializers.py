@@ -100,7 +100,7 @@ class PhotoListSerializer(serializers.ModelSerializer):
         model = Photo
         fields = [
             'id', 'filename', 'original_name', 'url',
-            'size_formatted', 'mimetype', 'thumbnail_url',
+            'size_formatted', 'mimetype', 'compressed_url', 'thumbnail_url',
             'album', 'description', 'created_at'
         ]
 
@@ -236,12 +236,17 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
         default=[],
         write_only=True
     )
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=20),
+        required=False,
+        write_only=True
+    )
 
     class Meta:
         model = Diary
         fields = [
             'title', 'content', 'mood', 'category',
-            'date', 'is_public', 'photo_ids', 'created_by'
+            'date', 'is_public', 'photo_ids', 'tags', 'created_by'
         ]
         extra_kwargs = {
             'created_by': {'required': False},
@@ -253,6 +258,7 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
         创建日记，处理照片关联
         """
         photo_ids = validated_data.pop('photo_ids', [])
+        tags = validated_data.pop('tags', [])
 
         # 创建日记
         diary = Diary.objects.create(**validated_data)
@@ -265,6 +271,11 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
             except Photo.DoesNotExist:
                 pass
 
+        for tag in tags:
+            cleaned_tag = tag.strip()
+            if cleaned_tag:
+                DiaryTag.objects.get_or_create(diary=diary, tag=cleaned_tag)
+
         return diary
 
     def update(self, instance, validated_data):
@@ -272,6 +283,7 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
         更新日记，处理照片关联
         """
         photo_ids = validated_data.pop('photo_ids', None)
+        tags = validated_data.pop('tags', None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -285,6 +297,13 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
                     DiaryPhoto.objects.get_or_create(diary=instance, photo=photo)
                 except Photo.DoesNotExist:
                     pass
+
+        if tags is not None:
+            DiaryTag.objects.filter(diary=instance).delete()
+            for tag in tags:
+                cleaned_tag = tag.strip()
+                if cleaned_tag:
+                    DiaryTag.objects.get_or_create(diary=instance, tag=cleaned_tag)
 
         return instance
 
