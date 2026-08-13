@@ -29,7 +29,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from .media_derivatives import generate_image_derivatives
-from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown, DiaryComment, Notification
+from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, DiaryFavorite, Countdown, DiaryComment, Notification
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
     PhotoSerializer, PhotoListSerializer, PhotoCreateSerializer,
@@ -144,6 +144,8 @@ class DiaryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__gte=start_date)
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
+        if request.query_params.get('favorites', '').lower() in ('true', '1'):
+            queryset = queryset.filter(favorites__user=request.user) if request.user.is_authenticated else queryset.none()
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -173,7 +175,7 @@ class DiaryViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         diary = self.perform_create(serializer)
 
-        diary_serializer = DiarySerializer(diary)
+        diary_serializer = DiarySerializer(diary, context=self.get_serializer_context())
         return success_response(
             {'diary': diary_serializer.data},
             message='日记创建成功'
@@ -192,7 +194,7 @@ class DiaryViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        diary_serializer = DiarySerializer(instance)
+        diary_serializer = DiarySerializer(instance, context=self.get_serializer_context())
         return success_response(
             {'diary': diary_serializer.data},
             message='日记更新成功'
@@ -222,10 +224,15 @@ class DiaryViewSet(viewsets.ModelViewSet):
         diary = self.get_object()
         photo_ids = request.data.get('photoIds', [])
 
-        for photo_id in photo_ids:
+        next_position = DiaryPhoto.objects.filter(diary=diary).count()
+        for offset, photo_id in enumerate(photo_ids):
             try:
                 photo = Photo.objects.get(id=photo_id)
-                DiaryPhoto.objects.get_or_create(diary=diary, photo=photo)
+                DiaryPhoto.objects.get_or_create(
+                    diary=diary,
+                    photo=photo,
+                    defaults={'position': next_position + offset},
+                )
             except Photo.DoesNotExist:
                 return error_response(f'照片 ID {photo_id} 不存在', status.HTTP_404_NOT_FOUND)
 
@@ -359,7 +366,7 @@ class DiaryViewSet(viewsets.ModelViewSet):
         diary.is_pinned = True
         diary.save(update_fields=['is_pinned'])
 
-        serializer = DiarySerializer(diary)
+        serializer = DiarySerializer(diary, context=self.get_serializer_context())
         return success_response({'diary': serializer.data}, message='日记置顶成功')
 
     @action(detail=True, methods=['post'], url_path='unpin')
@@ -377,8 +384,17 @@ class DiaryViewSet(viewsets.ModelViewSet):
         diary.is_pinned = False
         diary.save(update_fields=['is_pinned'])
 
-        serializer = DiarySerializer(diary)
+        serializer = DiarySerializer(diary, context=self.get_serializer_context())
         return success_response({'diary': serializer.data}, message='日记取消置顶成功')
+
+    @action(detail=True, methods=['post', 'delete'], url_path='favorite', permission_classes=[permissions.IsAuthenticated])
+    def favorite_diary(self, request, pk=None):
+        diary = self.get_object()
+        if request.method == 'POST':
+            DiaryFavorite.objects.get_or_create(user=request.user, diary=diary)
+            return success_response({'diary_id': diary.id, 'is_favorited': True}, message='日记已收藏')
+        DiaryFavorite.objects.filter(user=request.user, diary=diary).delete()
+        return success_response({'diary_id': diary.id, 'is_favorited': False}, message='已取消收藏')
 
 
 # ========================================

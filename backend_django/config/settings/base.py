@@ -155,7 +155,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=104857600, cast=
 # ========================================
 REST_FRAMEWORK = {
     # 分页
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "lovezs.pagination.PageSizePagination",
     "PAGE_SIZE": 20,
 
     # 过滤

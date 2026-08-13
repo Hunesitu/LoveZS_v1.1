@@ -4,7 +4,7 @@ LoveZs Django Admin 配置
 """
 
 from django.contrib import admin
-from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, Countdown
+from .models import Album, Photo, Diary, DiaryPhoto, DiaryTag, DiaryFavorite, Countdown
 
 
 # ========================================
@@ -175,6 +175,14 @@ class DiaryTagAdmin(admin.ModelAdmin):
     list_filter = ['tag']
     search_fields = ['diary__title', 'tag']
     autocomplete_fields = ['diary']
+
+
+@admin.register(DiaryFavorite)
+class DiaryFavoriteAdmin(admin.ModelAdmin):
+    list_display = ['user', 'diary', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['user__username', 'diary__title']
+    autocomplete_fields = ['user', 'diary']
 
 
 # ========================================

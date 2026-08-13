@@ -219,7 +219,7 @@ class Photo(models.Model):
         缩略图URL
         对应 Mongoose virtual: thumbnailUrl
         """
-        if not self.filename:
+        if not self.filename or not self.mimetype.startswith('image/'):
             return ''
         base_name = self.filename.rsplit('.', 1)[0]
         webp_filename = f'{base_name}.webp'
@@ -227,6 +227,16 @@ class Photo(models.Model):
         if webp_path.exists():
             return f"{settings.MEDIA_URL}thumbnails/{webp_filename}"
         return f"{settings.MEDIA_URL}thumbnails/{self.filename}"
+
+    @property
+    def preview_url(self):
+        """中等尺寸预览图URL，用于列表封面和轻量预览。"""
+        if not self.filename or not self.mimetype.startswith('image/'):
+            return ''
+        preview_path = settings.MEDIA_ROOT / 'previews' / self.filename
+        if not preview_path.exists():
+            return ''
+        return f"{settings.MEDIA_URL}previews/{self.filename}"
 
 
 # ========================================
@@ -351,6 +361,7 @@ class DiaryPhoto(models.Model):
     diary = models.ForeignKey(Diary, on_delete=models.CASCADE)
     photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
     attached_at = models.DateTimeField(auto_now_add=True, verbose_name='关联时间')
+    position = models.PositiveIntegerField(default=0, verbose_name='显示顺序')
 
     class Meta:
         verbose_name = '日记照片关联'
@@ -359,7 +370,9 @@ class DiaryPhoto(models.Model):
         indexes = [
             models.Index(fields=['diary']),
             models.Index(fields=['photo']),
+            models.Index(fields=['diary', 'position']),
         ]
+        ordering = ['position', 'id']
 
     def __str__(self):
         return f"{self.diary.title} - {self.photo.original_name}"
@@ -384,6 +397,19 @@ class DiaryTag(models.Model):
 
     def __str__(self):
         return f"{self.diary.title} - {self.tag}"
+
+
+class DiaryFavorite(models.Model):
+    diary = models.ForeignKey(Diary, on_delete=models.CASCADE, related_name='favorites', verbose_name='日记')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorite_diaries', verbose_name='用户')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='收藏时间')
+
+    class Meta:
+        verbose_name = '日记收藏'
+        verbose_name_plural = '日记收藏'
+        constraints = [models.UniqueConstraint(fields=['user', 'diary'], name='unique_user_diary_favorite')]
+        indexes = [models.Index(fields=['user', '-created_at'])]
+        ordering = ['-created_at']
 
 
 # ========================================

@@ -176,15 +176,16 @@ class DiarySerializer(serializers.ModelSerializer):
     word_count = serializers.ReadOnlyField()
 
     # 关联数据
-    attached_photos = PhotoSerializer(many=True, read_only=True)
+    attached_photos = serializers.SerializerMethodField()
     created_by_details = UserBasicSerializer(source='created_by', read_only=True)
     comments = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
 
     class Meta:
         model = Diary
         fields = [
             'id', 'title', 'content', 'mood', 'category',
-            'date', 'formatted_date', 'is_public', 'is_pinned',
+            'date', 'formatted_date', 'is_public', 'is_pinned', 'is_favorited',
             'attached_photos',
             'word_count',
             'created_by', 'created_by_details',
@@ -199,6 +200,16 @@ class DiarySerializer(serializers.ModelSerializer):
         ).prefetch_related('replies', 'replies__created_by')
         return DiaryCommentSerializer(top_level, many=True).data
 
+    def get_attached_photos(self, obj):
+        photos = Photo.objects.filter(diaryphoto__diary=obj).order_by('diaryphoto__position', 'diaryphoto__id')
+        return PhotoSerializer(photos, many=True, context=self.context).data
+
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.favorites.filter(user=request.user).exists()
+
 
 class DiaryListSerializer(serializers.ModelSerializer):
     """
@@ -207,14 +218,15 @@ class DiaryListSerializer(serializers.ModelSerializer):
     formatted_date = serializers.ReadOnlyField()
     word_count = serializers.ReadOnlyField()
     photo_count = serializers.SerializerMethodField()
-    attached_photos = PhotoListSerializer(many=True, read_only=True)
+    attached_photos = serializers.SerializerMethodField()
     created_by_details = UserBasicSerializer(source='created_by', read_only=True)
+    is_favorited = serializers.SerializerMethodField()
 
     class Meta:
         model = Diary
         fields = [
             'id', 'title', 'content', 'mood', 'category',
-            'date', 'formatted_date', 'is_public', 'is_pinned',
+            'date', 'formatted_date', 'is_public', 'is_pinned', 'is_favorited',
             'attached_photos',
             'word_count', 'photo_count',
             'created_by', 'created_by_details',
@@ -224,6 +236,16 @@ class DiaryListSerializer(serializers.ModelSerializer):
     def get_photo_count(self, obj):
         """获取关联照片数量"""
         return obj.attached_photos.count()
+
+    def get_attached_photos(self, obj):
+        photos = Photo.objects.filter(diaryphoto__diary=obj).order_by('diaryphoto__position', 'diaryphoto__id')
+        return PhotoListSerializer(photos, many=True, context=self.context).data
+
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.favorites.filter(user=request.user).exists()
 
 
 class DiaryCreateSerializer(serializers.ModelSerializer):
@@ -264,10 +286,10 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
         diary = Diary.objects.create(**validated_data)
 
         # 创建照片关联
-        for photo_id in photo_ids:
+        for position, photo_id in enumerate(photo_ids):
             try:
                 photo = Photo.objects.get(id=photo_id)
-                DiaryPhoto.objects.get_or_create(diary=diary, photo=photo)
+                DiaryPhoto.objects.get_or_create(diary=diary, photo=photo, defaults={'position': position})
             except Photo.DoesNotExist:
                 pass
 
@@ -291,10 +313,10 @@ class DiaryCreateSerializer(serializers.ModelSerializer):
 
         if photo_ids is not None:
             DiaryPhoto.objects.filter(diary=instance).delete()
-            for photo_id in photo_ids:
+            for position, photo_id in enumerate(photo_ids):
                 try:
                     photo = Photo.objects.get(id=photo_id)
-                    DiaryPhoto.objects.get_or_create(diary=instance, photo=photo)
+                    DiaryPhoto.objects.create(diary=instance, photo=photo, position=position)
                 except Photo.DoesNotExist:
                     pass
 

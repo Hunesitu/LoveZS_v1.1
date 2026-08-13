@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit2,
+  Heart,
   Pin,
   Reply,
   RotateCcw,
@@ -19,7 +20,7 @@ import dayjs from 'dayjs'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
 import { getMediaUrl, isVideo } from '@/utils/media'
-import diaryService, { pinDiary, unpinDiary } from '@/api/diary'
+import diaryService, { favoriteDiary, pinDiary, unfavoriteDiary, unpinDiary } from '@/api/diary'
 import { api } from '@/api/client'
 import { MOOD_EMOJIS, type Diary, type DiaryComment, type Photo } from '@/types'
 
@@ -99,6 +100,21 @@ const handleTogglePin = async () => {
   } catch (error) {
     console.error('Failed to toggle pin:', error)
     uiStore.showToast('操作失败，请稍后重试', 'error')
+  }
+}
+
+const handleToggleFavorite = async () => {
+  if (!diary.value) return
+  const previous = diary.value.is_favorited
+  diary.value.is_favorited = !previous
+  try {
+    if (diary.value.is_favorited) await favoriteDiary(diary.value.id)
+    else await unfavoriteDiary(diary.value.id)
+    uiStore.showToast(diary.value.is_favorited ? '已收藏日记' : '已取消收藏', 'success')
+  } catch (error) {
+    diary.value.is_favorited = previous
+    console.error('Failed to toggle favorite:', error)
+    uiStore.showToast('收藏操作失败，请稍后重试', 'error')
   }
 }
 
@@ -224,6 +240,17 @@ onUnmounted(() => {
         返回列表
       </button>
       <div class="header-actions">
+        <button
+          v-if="diary"
+          class="btn-secondary favorite-button"
+          :class="{ favorited: diary.is_favorited }"
+          :aria-pressed="diary.is_favorited"
+          type="button"
+          @click="handleToggleFavorite"
+        >
+          <Heart :size="18" :fill="diary.is_favorited ? 'currentColor' : 'none'" />
+          {{ diary.is_favorited ? '取消收藏' : '收藏' }}
+        </button>
         <button
           v-if="diary && (diary.created_by === userStore.user?.id || userStore.isAdmin)"
           class="btn-secondary"
@@ -441,6 +468,15 @@ onUnmounted(() => {
 .header-actions {
   display: flex;
   gap: 0.75rem;
+}
+
+.favorite-button {
+  min-height: 44px;
+}
+
+.favorite-button.favorited {
+  color: var(--rose-bright);
+  border-color: var(--rose-bright);
 }
 
 .detail-card {

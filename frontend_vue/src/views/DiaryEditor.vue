@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Save, Upload, X } from 'lucide-vue-next'
+import { GripVertical, Save, Upload, X } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
@@ -37,6 +37,9 @@ const showMoveDialog = ref(false)
 const targetDiaryId = ref<number | null>(null)
 const availableDiaries = ref<Diary[]>([])
 const isMoving = ref(false)
+const draggedPhotoId = ref<number | null>(null)
+const dragOverPhotoId = ref<number | null>(null)
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
 
 const moodOptions = Object.entries(MOOD_LABELS).map(([value, label]) => ({
   value: value as Mood,
@@ -199,6 +202,45 @@ const handlePaste = async (event: ClipboardEvent) => {
 const removeAttachedPhoto = (photoId: number) => {
   uploadedPhotos.value = uploadedPhotos.value.filter(photo => photo.id !== photoId)
   formData.value.photo_ids = (formData.value.photo_ids || []).filter(id => id !== photoId)
+}
+
+const syncPhotoOrder = () => {
+  formData.value.photo_ids = uploadedPhotos.value.map(photo => photo.id)
+}
+
+const startPhotoPress = (photoId: number, event: PointerEvent) => {
+  if (isSelectMode.value) return
+  longPressTimer = setTimeout(() => {
+    draggedPhotoId.value = photoId
+    dragOverPhotoId.value = photoId
+    ;(event.currentTarget as HTMLElement)?.setPointerCapture?.(event.pointerId)
+  }, 350)
+}
+
+const movePhotoPress = (event: PointerEvent) => {
+  if (draggedPhotoId.value === null) return
+  event.preventDefault()
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-photo-id]')
+  const targetId = Number(target?.dataset.photoId)
+  if (!Number.isFinite(targetId) || targetId === draggedPhotoId.value) return
+
+  const fromIndex = uploadedPhotos.value.findIndex(photo => photo.id === draggedPhotoId.value)
+  const toIndex = uploadedPhotos.value.findIndex(photo => photo.id === targetId)
+  if (fromIndex < 0 || toIndex < 0) return
+  const reordered = [...uploadedPhotos.value]
+  const [moved] = reordered.splice(fromIndex, 1)
+  if (!moved) return
+  reordered.splice(toIndex, 0, moved)
+  uploadedPhotos.value = reordered
+  dragOverPhotoId.value = targetId
+  syncPhotoOrder()
+}
+
+const endPhotoPress = () => {
+  if (longPressTimer) clearTimeout(longPressTimer)
+  longPressTimer = null
+  draggedPhotoId.value = null
+  dragOverPhotoId.value = null
 }
 
 const toggleSelectMode = () => {
@@ -396,14 +438,20 @@ onMounted(loadDiaryForEdit)
             v-for="photo in uploadedPhotos"
             :key="photo.id"
             class="attached-item"
-            :class="{ selected: selectedPhotoIds.has(photo.id), 'select-mode': isSelectMode }"
+            :class="{ selected: selectedPhotoIds.has(photo.id), 'select-mode': isSelectMode, dragging: draggedPhotoId === photo.id, 'drag-over': dragOverPhotoId === photo.id }"
+            :data-photo-id="photo.id"
             @click="isSelectMode ? togglePhotoSelect(photo.id) : undefined"
+            @pointerdown="event => startPhotoPress(photo.id, event)"
+            @pointermove="movePhotoPress"
+            @pointerup="endPhotoPress"
+            @pointercancel="endPhotoPress"
           >
             <video v-if="isVideo(photo)" :src="getMediaUrl(photo, 'thumbnail')" class="attached-image" muted preload="metadata" />
             <img v-else :src="getMediaUrl(photo, 'thumbnail')" :alt="photo.original_name" class="attached-image" loading="lazy" decoding="async" />
             <div v-if="isSelectMode" class="select-overlay">
               <span class="select-check">{{ selectedPhotoIds.has(photo.id) ? '✓' : '' }}</span>
             </div>
+            <span v-else class="drag-handle" aria-hidden="true"><GripVertical :size="18" /></span>
             <button v-if="!isSelectMode" type="button" class="attached-remove" @click="removeAttachedPhoto(photo.id)">移除</button>
           </div>
         </div>
@@ -544,6 +592,8 @@ onMounted(loadDiaryForEdit)
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.06);
   transition: transform var(--dur-base) ease, border-color var(--dur-base) ease;
+  touch-action: pan-y;
+  user-select: none;
 }
 
 .attached-item:hover {
@@ -558,6 +608,33 @@ onMounted(loadDiaryForEdit)
 .attached-item.selected {
   border-color: var(--rose-bright);
   box-shadow: 0 0 0 2px rgba(240, 120, 182, 0.3);
+}
+
+.attached-item.dragging {
+  z-index: 2;
+  cursor: grabbing;
+  opacity: 0.72;
+  border-color: var(--rose-bright);
+  transform: scale(1.03);
+  touch-action: none;
+}
+
+.attached-item.drag-over {
+  box-shadow: 0 0 0 2px rgba(240, 120, 182, 0.45);
+}
+
+.drag-handle {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  background: rgba(10, 8, 17, 0.68);
+  pointer-events: none;
 }
 
 .attached-image {

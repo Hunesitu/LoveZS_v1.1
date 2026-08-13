@@ -4,12 +4,14 @@ from io import BytesIO
 from importlib import import_module
 
 from django.apps import apps as django_apps
+from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.test.utils import override_settings
 from PIL import Image
+from rest_framework.test import APIClient
 
-from .models import Album, Diary, DiaryPhoto, DiaryTag, Photo
+from .models import Album, Diary, DiaryFavorite, DiaryPhoto, DiaryTag, Photo
 from .serializers import DiaryCreateSerializer, DiarySerializer
 
 
@@ -99,6 +101,21 @@ class DiaryCreateSerializerUpdateTests(TestCase):
             [self.photo_b.id],
         )
 
+    def test_update_should_preserve_requested_photo_order(self):
+        serializer = DiaryCreateSerializer(
+            instance=self.diary,
+            data={'photo_ids': [self.photo_b.id, self.photo_a.id]},
+            partial=True,
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        updated_diary = serializer.save()
+
+        data = DiarySerializer(updated_diary).data
+        self.assertEqual(
+            [photo['id'] for photo in data['attached_photos']],
+            [self.photo_b.id, self.photo_a.id],
+        )
+
 
 class MediaCompatibilityTests(TestCase):
     def setUp(self):
@@ -159,3 +176,39 @@ class PhotoUploadDerivativeTests(TestCase):
         self.assertTrue(photo_data['compressed_url'].endswith('.webp'))
         self.assertTrue(photo_data['thumbnail_url'].startswith('/media/thumbnails/'))
         self.assertTrue(photo_data['thumbnail_url'].endswith('.webp'))
+
+
+class DiaryFavoriteApiTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(username='favorite-user', password='test-pass-123')
+        self.other_user = user_model.objects.create_user(username='other-user', password='test-pass-123')
+        self.diary = Diary.objects.create(
+            title='可收藏日记', content='内容', mood='happy', category='生活', created_by=self.other_user
+        )
+        self.client = APIClient()
+
+    def test_favorite_requires_authentication(self):
+        response = self.client.post(f'/api/diaries/{self.diary.id}/favorite/')
+        self.assertEqual(response.status_code, 401)
+
+    def test_favorite_is_idempotent_and_private_to_user(self):
+        self.client.force_authenticate(self.user)
+        url = f'/api/diaries/{self.diary.id}/favorite/'
+        self.assertEqual(self.client.post(url).status_code, 200)
+        self.assertEqual(self.client.post(url).status_code, 200)
+        self.assertEqual(DiaryFavorite.objects.filter(user=self.user, diary=self.diary).count(), 1)
+
+        detail = self.client.get(f'/api/diaries/{self.diary.id}/').json()['data']['diary']
+        self.assertTrue(detail['is_favorited'])
+        self.client.force_authenticate(self.other_user)
+        detail = self.client.get(f'/api/diaries/{self.diary.id}/').json()['data']['diary']
+        self.assertFalse(detail['is_favorited'])
+
+    def test_unfavorite_and_favorites_filter(self):
+        DiaryFavorite.objects.create(user=self.user, diary=self.diary)
+        self.client.force_authenticate(self.user)
+        diaries = self.client.get('/api/diaries/', {'favorites': 'true'}).json()['results']['diaries']
+        self.assertEqual([item['id'] for item in diaries], [self.diary.id])
+        self.assertEqual(self.client.delete(f'/api/diaries/{self.diary.id}/favorite/').status_code, 200)
+        self.assertFalse(DiaryFavorite.objects.filter(user=self.user, diary=self.diary).exists())

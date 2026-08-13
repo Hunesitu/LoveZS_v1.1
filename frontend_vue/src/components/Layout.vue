@@ -28,12 +28,14 @@ const notificationStore = useNotificationStore()
 const menuItems = [
   { name: 'dashboard', label: '首页', icon: Home, path: '/dashboard' },
   { name: 'diaries', label: '日记', icon: BookOpen, path: '/diaries' },
+  { name: 'favorites', label: '收藏', icon: Heart, path: '/diaries?favorites=true' },
   { name: 'countdowns', label: '重要日', icon: Calendar, path: '/countdowns' },
   { name: 'notifications', label: '消息', icon: Bell, path: '/notifications', showBadge: true },
   { name: 'settings', label: '设置', icon: Settings, path: '/settings' },
 ]
 
 const currentRouteName = computed(() => route.name as string)
+const isFavoritesView = computed(() => route.name === 'diaries' && route.query.favorites === 'true')
 const isMobile = ref(window.innerWidth < 768)
 const showUserMenu = ref(false)
 
@@ -102,7 +104,7 @@ const handleLogout = async () => {
           :key="item.name"
           type="button"
           class="nav-item"
-          :class="{ active: currentRouteName === item.name }"
+          :class="{ active: (item.name === 'favorites' && isFavoritesView) || (item.name === currentRouteName && !isFavoritesView) }"
           @click="navigate(item.path)"
         >
           <component :is="item.icon" :size="20" />

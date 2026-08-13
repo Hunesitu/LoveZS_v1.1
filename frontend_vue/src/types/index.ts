@@ -103,6 +103,7 @@ export interface Photo {
   }
   compressed_url?: string
   thumbnail_url?: string
+  preview_url?: string
   created_by?: number | null
   created_by_details?: UserBasic
   created_at: string
@@ -129,8 +130,9 @@ export interface Diary {
   formatted_date?: string
   is_public?: boolean
   is_pinned?: boolean
-  attached_photos?: Photo[]
+  is_favorited?: boolean
   cover_media?: Photo | null
+  attached_photos?: Photo[]
   word_count?: number
   comments?: DiaryComment[]
   created_by?: number | null
@@ -221,6 +223,7 @@ export interface CreateDiaryRequest {
   date?: string
   is_public?: boolean
   photo_ids?: number[]
+  tags?: string[]
 }
 
 export interface UpdateDiaryRequest extends Partial<CreateDiaryRequest> {}
@@ -277,6 +280,7 @@ export interface FilterParams {
   start_date?: string
   end_date?: string
   search?: string
+  favorites?: boolean
 }
 
 export interface DiaryQueryParams extends PaginationParams, FilterParams {}

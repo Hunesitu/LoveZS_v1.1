@@ -112,6 +112,16 @@ export const unpinDiary = async (id: number): Promise<{ diary: Diary }> => {
   return response.data
 }
 
+export const favoriteDiary = async (id: number): Promise<{ diary_id: number; is_favorited: boolean }> => {
+  const response = await api.post<{ diary_id: number; is_favorited: boolean }>(`/diaries/${id}/favorite/`)
+  return response.data
+}
+
+export const unfavoriteDiary = async (id: number): Promise<{ diary_id: number; is_favorited: boolean }> => {
+  const response = await api.delete<{ diary_id: number; is_favorited: boolean }>(`/diaries/${id}/favorite/`)
+  return response.data
+}
+
 // 默认导出
 const diaryService = {
   getDiaries,
@@ -124,6 +134,8 @@ const diaryService = {
   getCategories,
   pinDiary,
   unpinDiary,
+  favoriteDiary,
+  unfavoriteDiary,
 }
 
 export default diaryService

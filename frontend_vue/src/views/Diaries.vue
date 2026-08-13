@@ -1,23 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { Edit, Heart, Pin, Plus, Search, Trash2 } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
-import { pinDiary, unpinDiary } from '@/api/diary'
+import { favoriteDiary, pinDiary, unfavoriteDiary, unpinDiary } from '@/api/diary'
 import { getMediaUrl, isVideo } from '@/utils/media'
 import { MOOD_EMOJIS, MOOD_LABELS, type Diary, type Mood, type Photo } from '@/types'
 
 const uiStore = useUiStore()
 const userStore = useUserStore()
+const route = useRoute()
 const { diaries, isLoading, loadDiaries, deleteDiary } = useDiaries()
 
 const searchTerm = ref('')
 const selectedCategory = ref('')
 const selectedMood = ref('')
 const categories = ref<string[]>([])
+const isFavoritesView = computed(() => route.query.favorites === 'true')
 
 const moodOptions = Object.entries(MOOD_LABELS).map(([value, label]) => ({
   value: value as Mood,
@@ -46,7 +48,7 @@ const loadCategories = () => {
 }
 
 const refreshData = async () => {
-  await loadDiaries()
+  await loadDiaries(isFavoritesView.value ? { favorites: true } : undefined)
   loadCategories()
 }
 
@@ -83,6 +85,22 @@ const handleTogglePin = async (diary: Diary, event: Event) => {
   }
 }
 
+const handleToggleFavorite = async (diary: Diary, event: Event) => {
+  event.preventDefault()
+  event.stopPropagation()
+  const previous = diary.is_favorited
+  diary.is_favorited = !previous
+  try {
+    if (diary.is_favorited) await favoriteDiary(diary.id)
+    else await unfavoriteDiary(diary.id)
+    uiStore.showToast(diary.is_favorited ? '已收藏日记' : '已取消收藏', 'success')
+  } catch (error) {
+    diary.is_favorited = previous
+    console.error('Failed to toggle favorite:', error)
+    uiStore.showToast('收藏操作失败，请稍后重试', 'error')
+  }
+}
+
 const stopCardNavigation = (event: Event) => {
   event.preventDefault()
   event.stopPropagation()
@@ -92,6 +110,7 @@ const stripMarkdown = (content: string, maxLength = 110) =>
   content.replace(/[#*`_[\]]/g, '').substring(0, maxLength)
 
 onMounted(refreshData)
+watch(isFavoritesView, refreshData)
 </script>
 
 <template>
@@ -99,8 +118,8 @@ onMounted(refreshData)
     <div class="page-header">
       <div>
         <p class="romance-kicker">Memory Library</p>
-        <h1 class="page-title">我的日记</h1>
-        <p class="page-subtitle">把每一次心动、旅行和日常，都剪进只属于我们的长片。</p>
+        <h1 class="page-title">{{ isFavoritesView ? '收藏日记' : '我的日记' }}</h1>
+        <p class="page-subtitle">{{ isFavoritesView ? '把喜欢的片段留在这里，随时回看。' : '把每一次心动、旅行和日常，都剪进只属于我们的长片。' }}</p>
       </div>
       <RouterLink to="/diaries/new" class="btn-primary">
         <Plus :size="16" />
@@ -178,8 +197,19 @@ onMounted(refreshData)
                 </p>
               </div>
             </div>
-            <div v-if="diary.created_by === userStore.user?.id || userStore.isAdmin" class="header-actions">
+            <div class="header-actions">
               <button
+                type="button"
+                class="action-btn favorite-btn"
+                :class="{ favorited: diary.is_favorited }"
+                :aria-label="diary.is_favorited ? '取消收藏' : '收藏日记'"
+                :aria-pressed="diary.is_favorited"
+                @click="event => handleToggleFavorite(diary, event)"
+              >
+                <Heart :size="18" :fill="diary.is_favorited ? 'currentColor' : 'none'" />
+              </button>
+              <button
+                v-if="diary.created_by === userStore.user?.id || userStore.isAdmin"
                 type="button"
                 class="action-btn"
                 :title="diary.is_pinned ? '取消置顶' : '置顶'"
@@ -188,6 +218,7 @@ onMounted(refreshData)
                 <Pin :size="16" :class="{ pinned: diary.is_pinned }" />
               </button>
               <RouterLink
+                v-if="diary.created_by === userStore.user?.id || userStore.isAdmin"
                 :to="`/diaries/${diary.id}/edit`"
                 class="action-btn"
                 title="编辑"
@@ -196,6 +227,7 @@ onMounted(refreshData)
                 <Edit :size="16" />
               </RouterLink>
               <button
+                v-if="diary.created_by === userStore.user?.id || userStore.isAdmin"
                 type="button"
                 class="action-btn danger"
                 title="删除"
@@ -385,11 +417,15 @@ onMounted(refreshData)
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border: 1px solid transparent;
   color: var(--ink-muted);
   background: transparent;
+}
+
+.favorite-btn.favorited {
+  color: var(--rose-bright);
 }
 
 .action-btn:hover {
