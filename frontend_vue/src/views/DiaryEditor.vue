@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { GripVertical, Save, Upload, X } from 'lucide-vue-next'
+import { Save, Upload, X } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import { useDiaries } from '@/composables/useDiaries'
 import { useUiStore } from '@/stores/ui'
@@ -40,6 +40,8 @@ const isMoving = ref(false)
 const draggedPhotoId = ref<number | null>(null)
 const dragOverPhotoId = ref<number | null>(null)
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let pressStartX = 0
+let pressStartY = 0
 
 const moodOptions = Object.entries(MOOD_LABELS).map(([value, label]) => ({
   value: value as Mood,
@@ -209,16 +211,25 @@ const syncPhotoOrder = () => {
 }
 
 const startPhotoPress = (photoId: number, event: PointerEvent) => {
-  if (isSelectMode.value) return
+  if (isSelectMode.value || event.button !== 0) return
+  endPhotoPress()
+  pressStartX = event.clientX
+  pressStartY = event.clientY
+  window.addEventListener('pointermove', movePhotoPress, { passive: false })
+  window.addEventListener('pointerup', endPhotoPress, { once: true })
+  window.addEventListener('pointercancel', endPhotoPress, { once: true })
   longPressTimer = setTimeout(() => {
     draggedPhotoId.value = photoId
     dragOverPhotoId.value = photoId
-    ;(event.currentTarget as HTMLElement)?.setPointerCapture?.(event.pointerId)
   }, 350)
 }
 
 const movePhotoPress = (event: PointerEvent) => {
-  if (draggedPhotoId.value === null) return
+  if (draggedPhotoId.value === null) {
+    const distance = Math.hypot(event.clientX - pressStartX, event.clientY - pressStartY)
+    if (distance > 10) endPhotoPress()
+    return
+  }
   event.preventDefault()
   const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-photo-id]')
   const targetId = Number(target?.dataset.photoId)
@@ -241,6 +252,9 @@ const endPhotoPress = () => {
   longPressTimer = null
   draggedPhotoId.value = null
   dragOverPhotoId.value = null
+  window.removeEventListener('pointermove', movePhotoPress)
+  window.removeEventListener('pointerup', endPhotoPress)
+  window.removeEventListener('pointercancel', endPhotoPress)
 }
 
 const toggleSelectMode = () => {
@@ -326,6 +340,7 @@ const goBack = () => {
 }
 
 onMounted(loadDiaryForEdit)
+onUnmounted(endPhotoPress)
 </script>
 
 <template>
@@ -442,17 +457,14 @@ onMounted(loadDiaryForEdit)
             :data-photo-id="photo.id"
             @click="isSelectMode ? togglePhotoSelect(photo.id) : undefined"
             @pointerdown="event => startPhotoPress(photo.id, event)"
-            @pointermove="movePhotoPress"
-            @pointerup="endPhotoPress"
-            @pointercancel="endPhotoPress"
+            @contextmenu.prevent
           >
-            <video v-if="isVideo(photo)" :src="getMediaUrl(photo, 'thumbnail')" class="attached-image" muted preload="metadata" />
-            <img v-else :src="getMediaUrl(photo, 'thumbnail')" :alt="photo.original_name" class="attached-image" loading="lazy" decoding="async" />
+            <video v-if="isVideo(photo)" :src="getMediaUrl(photo, 'thumbnail')" class="attached-image" muted preload="metadata" draggable="false" @dragstart.prevent />
+            <img v-else :src="getMediaUrl(photo, 'thumbnail')" :alt="photo.original_name" class="attached-image" loading="lazy" decoding="async" draggable="false" @dragstart.prevent />
             <div v-if="isSelectMode" class="select-overlay">
               <span class="select-check">{{ selectedPhotoIds.has(photo.id) ? '✓' : '' }}</span>
             </div>
-            <span v-else class="drag-handle" aria-hidden="true"><GripVertical :size="18" /></span>
-            <button v-if="!isSelectMode" type="button" class="attached-remove" @click="removeAttachedPhoto(photo.id)">移除</button>
+            <button v-if="!isSelectMode" type="button" class="attached-remove" @pointerdown.stop @click="removeAttachedPhoto(photo.id)">移除</button>
           </div>
         </div>
       </div>
@@ -621,20 +633,6 @@ onMounted(loadDiaryForEdit)
 
 .attached-item.drag-over {
   box-shadow: 0 0 0 2px rgba(240, 120, 182, 0.45);
-}
-
-.drag-handle {
-  position: absolute;
-  top: 0.4rem;
-  left: 0.4rem;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  color: #fff;
-  background: rgba(10, 8, 17, 0.68);
-  pointer-events: none;
 }
 
 .attached-image {
