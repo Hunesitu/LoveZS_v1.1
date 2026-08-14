@@ -58,7 +58,7 @@ const diaryFrames = computed<StoryFrame[]>(() =>
     media: getDiaryCover(diary),
     title: diary.title || `第 ${index + 1} 幕`,
     caption: diary.content?.replace(/[#*`_[\]]/g, '').slice(0, 42) || getFallbackLine(index),
-    date: diary.date || diary.created_at,
+    date: diary.created_at || diary.date,
   }))
 )
 
@@ -173,7 +173,7 @@ onMounted(async () => {
             <Film :size="44" />
           </div>
           <div class="poster-badge">
-            <span>{{ nextMilestone?.title || `${loveDays} 天` }}</span>
+            <span>{{ heroFrame.date ? dayjs(heroFrame.date).format('YYYY年M月D日') : '暂无日记' }}</span>
           </div>
           <div class="poster-overlay">
             <span class="poster-label">Tonight's Feature</span>
