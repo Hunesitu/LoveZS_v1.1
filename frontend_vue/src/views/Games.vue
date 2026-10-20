@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import dayjs from 'dayjs'
 import {
   Bot,
   Check,
@@ -38,10 +39,12 @@ const secretInput = ref('')
 const guessInput = ref('')
 const tick = ref(Date.now())
 const feedback = ref<{ hits: number; guess: string; key: number } | null>(null)
+const oppFeedback = ref<{ hits: number; guess: string; key: number } | null>(null)
 
 let pollTimer: number | null = null
 let clockTimer: number | null = null
 let feedbackTimer: number | null = null
+let oppFeedbackTimer: number | null = null
 
 const screen = computed(() => {
   if (!room.value) return pveSetup.value ? 'pve-setup' : 'lobby'
@@ -73,6 +76,13 @@ const canGuess = computed(() => room.value?.status === 'playing' && room.value?.
 
 const isValidSecret = (value: string) => /^\d{4}$/.test(value)
 
+const formatDate = (value: string | null) => {
+  if (!value) return ''
+  const date = dayjs(value)
+  if (!date.isValid()) return ''
+  return date.isSame(dayjs(), 'day') ? `今天 ${date.format('HH:mm')}` : date.format('M月D日 HH:mm')
+}
+
 // ========================================
 // 轮询
 // ========================================
@@ -84,11 +94,35 @@ const stopPolling = () => {
   }
 }
 
+const showOppFeedback = (hits: number, guess: string) => {
+  oppFeedback.value = { hits, guess, key: Date.now() }
+  if (oppFeedbackTimer !== null) window.clearTimeout(oppFeedbackTimer)
+  oppFeedbackTimer = window.setTimeout(() => {
+    oppFeedback.value = null
+  }, 2600)
+}
+
+/**
+ * 统一更新对局数据：如果是同一局、且对手新增了猜测，就弹一条「对方猜对几个」。
+ */
+const applyRoom = (next: GameRoomData) => {
+  const previous = room.value
+  const sameRoom = previous?.id === next.id
+  const prevOppCount = previous?.opponent_guess_count ?? 0
+
+  room.value = next
+
+  if (sameRoom && next.opponent_guess_count > prevOppCount) {
+    const latestOpp = [...next.guesses].reverse().find((item) => !item.is_mine)
+    if (latestOpp) showOppFeedback(latestOpp.hits, latestOpp.guess)
+  }
+}
+
 const refreshRoom = async () => {
   if (!room.value) return
   try {
     const { room: latest } = await getRoom(room.value.id)
-    room.value = latest
+    applyRoom(latest)
     if (latest.status === 'finished' || latest.status === 'cancelled') {
       stopPolling()
       if (latest.status === 'cancelled') {
@@ -250,7 +284,7 @@ const sendGuess = async () => {
   busy.value = true
   try {
     const { room: updated, results } = await submitGuess(room.value.id, guess)
-    room.value = updated
+    applyRoom(updated)
     guessInput.value = ''
 
     const mine = results.find((item) => item.side === updated.my_side) || { side: updated.my_side, guess, hits: 0 }
@@ -335,6 +369,7 @@ onUnmounted(() => {
   stopPolling()
   if (clockTimer !== null) window.clearInterval(clockTimer)
   if (feedbackTimer !== null) window.clearTimeout(feedbackTimer)
+  if (oppFeedbackTimer !== null) window.clearTimeout(oppFeedbackTimer)
 })
 </script>
 
@@ -411,6 +446,7 @@ onUnmounted(() => {
           <li v-for="item in stats.recent" :key="item.id">
             <span class="recent-mode">{{ item.mode === 'pve' ? '人机' : '对战' }}</span>
             <span class="recent-opponent">vs {{ item.opponent }}</span>
+            <span class="recent-date">{{ formatDate(item.finished_at) }}</span>
             <span class="recent-result" :class="item.i_won ? 'win' : 'lose'">{{ item.i_won ? '胜' : '负' }}</span>
             <span class="recent-guesses">{{ item.my_guesses }} 次</span>
           </li>
@@ -615,6 +651,18 @@ onUnmounted(() => {
           </span>
           <span class="feedback-guess">{{ feedback.guess }}</span>
         </div>
+      </div>
+    </Transition>
+    <!-- ================= 对手猜测提示 ================= -->
+    <Transition name="opp">
+      <div v-if="oppFeedback" :key="oppFeedback.key" class="opp-feedback">
+        <span class="opp-who">{{ opponentName }} 猜了 {{ oppFeedback.guess }}</span>
+        <span
+          class="opp-hits"
+          :class="{ zero: oppFeedback.hits === 0, perfect: oppFeedback.hits === 4 }"
+        >
+          {{ oppFeedback.hits === 0 ? '一个都没对' : `猜对 ${oppFeedback.hits} 个` }}
+        </span>
       </div>
     </Transition>
   </div>
@@ -917,7 +965,7 @@ onUnmounted(() => {
 
 .recent-panel li {
   display: grid;
-  grid-template-columns: 3.5rem 1fr 2rem 3.5rem;
+  grid-template-columns: 3rem minmax(0, 1fr) auto 1.5rem 3rem;
   align-items: center;
   gap: 0.5rem;
   padding: 0.45rem 0.6rem;
@@ -925,6 +973,13 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.03);
   font-size: 0.82rem;
   color: var(--ink-soft);
+}
+
+.recent-date {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .recent-mode {
@@ -1463,6 +1518,71 @@ onUnmounted(() => {
   .feedback-card,
   .feedback-card.zero {
     animation: none;
+  }
+}
+
+/* ---------- 对手猜测提示 ---------- */
+.opp-feedback {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(16, 10, 22, 0.92);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  animation: opp-in 260ms ease both;
+}
+
+.opp-who {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
+.opp-hits {
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.opp-hits.zero {
+  color: var(--ink-muted);
+}
+
+.opp-hits.perfect {
+  color: var(--gold);
+}
+
+@keyframes opp-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.opp-leave-active {
+  transition: opacity 200ms ease;
+}
+
+.opp-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opp-feedback {
+    animation: none;
+    transform: translate(-50%, 0);
   }
 }
 
