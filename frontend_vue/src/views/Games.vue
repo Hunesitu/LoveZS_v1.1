@@ -80,7 +80,11 @@ const formatDate = (value: string | null) => {
   if (!value) return ''
   const date = dayjs(value)
   if (!date.isValid()) return ''
-  return date.isSame(dayjs(), 'day') ? `今天 ${date.format('HH:mm')}` : date.format('M月D日 HH:mm')
+  const today = dayjs()
+  if (date.isSame(today, 'day')) return '今天'
+  if (date.isSame(today.subtract(1, 'day'), 'day')) return '昨天'
+  // 跨年时才带上年份，其余只显示日期
+  return date.isSame(today, 'year') ? date.format('M月D日') : date.format('YYYY年M月D日')
 }
 
 // ========================================
