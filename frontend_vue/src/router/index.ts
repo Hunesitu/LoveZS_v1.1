@@ -62,6 +62,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '重要日' },
       },
       {
+        path: 'games',
+        name: 'games',
+        component: () => import('@/views/Games.vue'),
+        meta: { title: '数字炸弹' },
+      },
+      {
         path: 'notifications',
         name: 'notifications',
         component: () => import('@/views/Notifications.vue'),

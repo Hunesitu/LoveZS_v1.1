@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Bell,
+  Bomb,
   BookOpen,
   Calendar,
   ChevronRight,
@@ -30,6 +31,7 @@ const menuItems = [
   { name: 'diaries', label: '日记', icon: BookOpen, path: '/diaries' },
   { name: 'favorites', label: '收藏', icon: Heart, path: '/diaries?favorites=true' },
   { name: 'countdowns', label: '重要日', icon: Calendar, path: '/countdowns' },
+  { name: 'games', label: '数字炸弹', icon: Bomb, path: '/games' },
   { name: 'notifications', label: '消息', icon: Bell, path: '/notifications', showBadge: true },
   { name: 'settings', label: '设置', icon: Settings, path: '/settings' },
 ]

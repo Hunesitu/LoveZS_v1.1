@@ -688,3 +688,119 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.title}"
+
+
+# ========================================
+# 数字炸弹小游戏
+# ========================================
+
+class GameRoom(models.Model):
+    """
+    数字炸弹对局
+
+    规则：双方各自想一个 4 位数字（0000-9999，允许首位为 0，数字可重复）。
+    轮流猜对方的数，每次只回报“位置和数字都对的有几个”（0-4）。
+    先猜中 4 个的一方获胜。
+
+    人机对战（pve）：player2 为空，代表电脑；电脑的数由服务端生成。
+    玩家对战（pvp）：通过匹配接口把两名在线玩家配到同一房间。
+    """
+
+    class Mode(models.TextChoices):
+        PVE = 'pve', '人机对战'
+        PVP = 'pvp', '玩家对战'
+
+    class Status(models.TextChoices):
+        WAITING = 'waiting', '等待对手'
+        SETUP = 'setup', '设置数字'
+        PLAYING = 'playing', '进行中'
+        FINISHED = 'finished', '已结束'
+        CANCELLED = 'cancelled', '已取消'
+
+    mode = models.CharField(max_length=8, choices=Mode.choices, verbose_name='模式')
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.WAITING, verbose_name='状态'
+    )
+    player1 = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='game_rooms_as_player1',
+        verbose_name='玩家一（先手）'
+    )
+    player2 = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='game_rooms_as_player2',
+        verbose_name='玩家二（人机对战时为空，代表电脑）'
+    )
+    p1_secret = models.CharField(max_length=4, blank=True, verbose_name='玩家一的秘密数字')
+    p2_secret = models.CharField(max_length=4, blank=True, verbose_name='玩家二的秘密数字')
+    turn = models.PositiveSmallIntegerField(default=1, verbose_name='当前轮到的阵营（1 或 2）')
+    winner_side = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name='获胜阵营（1 或 2，空表示未分胜负）'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name='开始时间')
+    finished_at = models.DateTimeField(null=True, blank=True, verbose_name='结束时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '数字炸弹对局'
+        verbose_name_plural = '数字炸弹对局'
+        indexes = [
+            models.Index(fields=['mode', 'status']),
+            models.Index(fields=['player1', 'status']),
+            models.Index(fields=['player2', 'status']),
+        ]
+
+    def __str__(self):
+        return f"GameRoom#{self.pk} {self.mode} {self.status}"
+
+    @property
+    def is_pve(self):
+        return self.mode == self.Mode.PVE
+
+    def side_of(self, user):
+        """返回该用户在这局里的阵营（1/2），不在局里返回 None。"""
+        if user is None or not user.is_authenticated:
+            return None
+        if self.player1_id == user.id:
+            return 1
+        if self.player2_id and self.player2_id == user.id:
+            return 2
+        return None
+
+    def opponent_secret(self, side):
+        """取对手的秘密数字；人机对战时电脑一方为 p2_secret。"""
+        return self.p2_secret if side == 1 else self.p1_secret
+
+
+class GameGuess(models.Model):
+    """一次猜测记录"""
+
+    room = models.ForeignKey(
+        GameRoom, on_delete=models.CASCADE, related_name='guesses', verbose_name='对局'
+    )
+    side = models.PositiveSmallIntegerField(verbose_name='猜测方阵营（1 或 2）')
+    player = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='game_guesses',
+        verbose_name='猜测者（电脑猜测时为空）'
+    )
+    guess = models.CharField(max_length=4, verbose_name='猜测的数字')
+    hits = models.PositiveSmallIntegerField(verbose_name='位置和数字都对的数量')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='猜测时间')
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = '数字炸弹猜测'
+        verbose_name_plural = '数字炸弹猜测'
+
+    def __str__(self):
+        return f"{self.guess} -> {self.hits}"
