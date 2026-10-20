@@ -13,6 +13,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from .game_engine import ComputerBrain, count_hits, is_valid_number, random_number
+from .game_hints import HINTS_BY_HITS, get_opponent_hint
 from .models import GameGuess, GameRoom
 
 User = get_user_model()
@@ -65,6 +66,24 @@ class GameEngineTests(TestCase):
         brain.observe('9027', 2)
         self.assertTrue(all(count_hits(c, '9027') == 2 for c in brain.candidates))
         self.assertNotIn('9027', brain.candidates)
+
+
+class GameHintTests(TestCase):
+    """对手提示语：只依赖命中数，稳定可复现"""
+
+    def test_hints_cover_zero_to_three(self):
+        for hits in (0, 1, 2, 3):
+            hint = get_opponent_hint(hits)
+            self.assertTrue(hint)
+            self.assertIn(hint, HINTS_BY_HITS[hits])
+
+    def test_no_hint_when_all_four_hit(self):
+        self.assertEqual(get_opponent_hint(4), '')
+
+    def test_seeded_hint_is_stable(self):
+        first = get_opponent_hint(2, seed=42)
+        for _ in range(5):
+            self.assertEqual(get_opponent_hint(2, seed=42), first)
 
 
 class GameApiTestBase(TestCase):
@@ -153,6 +172,21 @@ class PveFlowTests(GameApiTestBase):
         # 自己的数字可以回显，对手（电脑）的数字绝不能下发
         self.assertIn('1234', body)
         self.assertNotIn(room.p2_secret, body)
+
+    def test_opponent_guess_carries_hint(self):
+        self.auth(self.alice)
+        self.client.post('/api/games/pve/', {'secret': '1234'}, format='json')
+        room = GameRoom.objects.get(player1=self.alice)
+
+        response = self.client.post(
+            f'/api/games/room/{room.id}/guess/', {'guess': '5678'}, format='json'
+        )
+        guesses = self.payload(response)['room']['guesses']
+        mine = [item for item in guesses if item['is_mine']]
+        theirs = [item for item in guesses if not item['is_mine']]
+
+        self.assertEqual(mine[0]['hint'], '')      # 自己的猜测不带提示
+        self.assertTrue(theirs[0]['hint'])          # 对手的猜测带提示
 
     def test_cannot_open_second_game(self):
         self.auth(self.alice)

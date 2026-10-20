@@ -39,7 +39,7 @@ const secretInput = ref('')
 const guessInput = ref('')
 const tick = ref(Date.now())
 const feedback = ref<{ hits: number; guess: string; key: number } | null>(null)
-const oppFeedback = ref<{ hits: number; guess: string; key: number } | null>(null)
+const oppFeedback = ref<{ hits: number; guess: string; hint: string; key: number } | null>(null)
 
 let pollTimer: number | null = null
 let clockTimer: number | null = null
@@ -94,12 +94,12 @@ const stopPolling = () => {
   }
 }
 
-const showOppFeedback = (hits: number, guess: string) => {
-  oppFeedback.value = { hits, guess, key: Date.now() }
+const showOppFeedback = (hits: number, guess: string, hint = '') => {
+  oppFeedback.value = { hits, guess, hint, key: Date.now() }
   if (oppFeedbackTimer !== null) window.clearTimeout(oppFeedbackTimer)
   oppFeedbackTimer = window.setTimeout(() => {
     oppFeedback.value = null
-  }, 2600)
+  }, hint ? 3200 : 2600)
 }
 
 /**
@@ -114,7 +114,7 @@ const applyRoom = (next: GameRoomData) => {
 
   if (sameRoom && next.opponent_guess_count > prevOppCount) {
     const latestOpp = [...next.guesses].reverse().find((item) => !item.is_mine)
-    if (latestOpp) showOppFeedback(latestOpp.hits, latestOpp.guess)
+    if (latestOpp) showOppFeedback(latestOpp.hits, latestOpp.guess, latestOpp.hint)
   }
 }
 
@@ -656,13 +656,16 @@ onUnmounted(() => {
     <!-- ================= 对手猜测提示 ================= -->
     <Transition name="opp">
       <div v-if="oppFeedback" :key="oppFeedback.key" class="opp-feedback">
-        <span class="opp-who">{{ opponentName }} 猜了 {{ oppFeedback.guess }}</span>
-        <span
-          class="opp-hits"
-          :class="{ zero: oppFeedback.hits === 0, perfect: oppFeedback.hits === 4 }"
-        >
-          {{ oppFeedback.hits === 0 ? '一个都没对' : `猜对 ${oppFeedback.hits} 个` }}
-        </span>
+        <div class="opp-line">
+          <span class="opp-who">{{ opponentName }} 猜了 {{ oppFeedback.guess }}</span>
+          <span
+            class="opp-hits"
+            :class="{ zero: oppFeedback.hits === 0, perfect: oppFeedback.hits === 4 }"
+          >
+            {{ oppFeedback.hits === 0 ? '一个都没对' : `猜对 ${oppFeedback.hits} 个` }}
+          </span>
+        </div>
+        <p v-if="oppFeedback.hint" class="opp-hint">{{ oppFeedback.hint }}</p>
       </div>
     </Transition>
   </div>
@@ -1528,16 +1531,30 @@ onUnmounted(() => {
   left: 50%;
   z-index: 65;
   display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 1rem;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: min(28rem, calc(100vw - 2rem));
+  padding: 0.55rem 1rem 0.6rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
+  border-radius: 14px;
   background: rgba(16, 10, 22, 0.92);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
   pointer-events: none;
   animation: opp-in 260ms ease both;
+}
+
+.opp-line {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.opp-hint {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .opp-who {

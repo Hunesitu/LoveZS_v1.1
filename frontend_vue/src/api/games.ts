@@ -10,6 +10,7 @@ export interface GameGuessItem {
   hits: number
   is_mine: boolean
   created_at: string
+  hint: string
 }
 
 export interface GameResult {

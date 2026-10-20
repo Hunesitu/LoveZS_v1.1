@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from .game_engine import ComputerBrain, count_hits, is_valid_number, random_number
+from .game_hints import get_opponent_hint
 from .models import GameGuess, GameRoom
 from .views import error_response, success_response
 
@@ -69,6 +70,8 @@ def serialize_room(room, user):
             'hits': guess.hits,
             'is_mine': guess.side == my_side,
             'created_at': guess.created_at.isoformat(),
+            # 只给对手的猜测配提示语；用记录 id 做种子，轮询时同一手始终同一句
+            'hint': '' if guess.side == my_side else get_opponent_hint(guess.hits, guess.id),
         }
         for guess in room.guesses.all()
     ]
