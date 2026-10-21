@@ -717,7 +717,18 @@ class GameRoom(models.Model):
         FINISHED = 'finished', '已结束'
         CANCELLED = 'cancelled', '已取消'
 
+    class Difficulty(models.TextChoices):
+        EASY = 'easy', '简单'
+        NORMAL = 'normal', '普通'
+        HARD = 'hard', '困难'
+
     mode = models.CharField(max_length=8, choices=Mode.choices, verbose_name='模式')
+    difficulty = models.CharField(
+        max_length=8,
+        choices=Difficulty.choices,
+        default=Difficulty.NORMAL,
+        verbose_name='电脑难度（仅人机对战有效）'
+    )
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.WAITING, verbose_name='状态'
     )

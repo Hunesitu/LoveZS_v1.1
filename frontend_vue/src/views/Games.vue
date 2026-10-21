@@ -22,6 +22,7 @@ import {
   startPve,
   submitGuess,
   submitSecret,
+  type GameDifficulty,
   type GameRoomData,
   type GameStats,
 } from '@/api/games'
@@ -29,12 +30,29 @@ import { useUiStore } from '@/stores/ui'
 
 const uiStore = useUiStore()
 
+const DIFFICULTY_OPTIONS: Array<{
+  value: GameDifficulty
+  label: string
+  desc: string
+}> = [
+  { value: 'easy', label: '简单', desc: '电脑常常走神乱猜' },
+  { value: 'normal', label: '普通', desc: '偶尔失手，通常 10 轮' },
+  { value: 'hard', label: '困难', desc: '每步都算，约 9 轮' },
+]
+
+const DIFFICULTY_LABEL: Record<GameDifficulty, string> = {
+  easy: '简单',
+  normal: '普通',
+  hard: '困难',
+}
+
 const room = ref<GameRoomData | null>(null)
 const resumeRoom = ref<GameRoomData | null>(null)
 const stats = ref<GameStats | null>(null)
 const loading = ref(true)
 const busy = ref(false)
 const pveSetup = ref(false)
+const difficulty = ref<GameDifficulty>('normal')
 const secretInput = ref('')
 const guessInput = ref('')
 const tick = ref(Date.now())
@@ -217,12 +235,12 @@ const beginPve = async () => {
   }
   busy.value = true
   try {
-    const { room: created } = await startPve(secret)
+    const { room: created } = await startPve(secret, difficulty.value)
     room.value = created
     pveSetup.value = false
     secretInput.value = ''
     startPolling()
-    uiStore.showToast('开局！先猜电脑的数字', 'success')
+    uiStore.showToast(`开局！${DIFFICULTY_LABEL[difficulty.value]}难度，先猜电脑的数字`, 'success')
   } catch (error: any) {
     uiStore.showToast(error?.response?.data?.message || '开局失败，请重试', 'error')
   } finally {
@@ -468,6 +486,22 @@ onUnmounted(() => {
         <h1>出个题</h1>
         <p class="panel-sub">想一个 4 位数字（0000–9999，可以以 0 开头），让电脑来猜。别告诉它。</p>
 
+        <div class="difficulty-row" role="radiogroup" aria-label="电脑难度">
+          <button
+            v-for="item in DIFFICULTY_OPTIONS"
+            :key="item.value"
+            type="button"
+            class="difficulty-option"
+            :class="{ active: difficulty === item.value }"
+            role="radio"
+            :aria-checked="difficulty === item.value"
+            @click="difficulty = item.value"
+          >
+            <span class="difficulty-name">{{ item.label }}</span>
+            <span class="difficulty-desc">{{ item.desc }}</span>
+          </button>
+        </div>
+
         <div class="secret-row">
           <input
             v-model="secretInput"
@@ -544,7 +578,9 @@ onUnmounted(() => {
     <template v-else-if="screen === 'playing' && room">
       <div class="screen-bar">
         <button class="link-btn" type="button" @click="leaveRoom(true)">← 玩法选择</button>
-        <span class="mode-tag">{{ isPve ? '人机对战' : '玩家对战' }}</span>
+        <span class="mode-tag">
+          {{ isPve ? `人机对战 · ${DIFFICULTY_LABEL[room.difficulty]}` : '玩家对战' }}
+        </span>
       </div>
 
       <section class="game-head">
@@ -1056,6 +1092,55 @@ onUnmounted(() => {
   gap: 0.6rem;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.difficulty-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: min(26rem, 100%);
+}
+
+.difficulty-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.6rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.difficulty-option:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.difficulty-option.active {
+  border-color: var(--rose);
+  background: rgba(239, 111, 169, 0.14);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px rgba(239, 111, 169, 0.25) inset;
+}
+
+.difficulty-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.difficulty-desc {
+  color: var(--ink-dim);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.difficulty-option.active .difficulty-desc {
+  color: var(--ink-muted);
 }
 
 .secret-input,

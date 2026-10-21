@@ -4,6 +4,8 @@
 
 import { api } from './client'
 
+export type GameDifficulty = 'easy' | 'normal' | 'hard'
+
 export interface GameGuessItem {
   side: number
   guess: string
@@ -28,6 +30,7 @@ export interface GameOpponent {
 export interface GameRoomData {
   id: number
   mode: 'pve' | 'pvp'
+  difficulty: GameDifficulty
   status: 'waiting' | 'setup' | 'playing' | 'finished' | 'cancelled'
   my_side: number
   turn_side: number
@@ -73,8 +76,11 @@ export const getRoom = async (roomId: number): Promise<{ room: GameRoomData }> =
   return response.data
 }
 
-export const startPve = async (secret: string): Promise<{ room: GameRoomData }> => {
-  const response = await api.post<{ room: GameRoomData }>('/games/pve/', { secret })
+export const startPve = async (
+  secret: string,
+  difficulty: GameDifficulty = 'normal',
+): Promise<{ room: GameRoomData }> => {
+  const response = await api.post<{ room: GameRoomData }>('/games/pve/', { secret, difficulty })
   return response.data
 }
 

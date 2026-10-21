@@ -23,7 +23,14 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from .game_engine import ComputerBrain, count_hits, is_valid_number, random_number
+from .game_engine import (
+    DEFAULT_DIFFICULTY,
+    DIFFICULTIES,
+    ComputerBrain,
+    count_hits,
+    is_valid_number,
+    random_number,
+)
 from .game_hints import get_opponent_hint
 from .models import GameGuess, GameRoom
 from .views import error_response, success_response
@@ -100,6 +107,7 @@ def serialize_room(room, user):
     return {
         'id': room.id,
         'mode': room.mode,
+        'difficulty': room.difficulty,
         'status': room.status,
         'my_side': my_side,
         'turn_side': room.turn,
@@ -157,7 +165,7 @@ def _finish(room, winner_side):
 
 def _computer_turn(room):
     """电脑走一步：推理 -> 记录 -> 判断是否获胜，返回本次猜测记录。"""
-    brain = ComputerBrain()
+    brain = ComputerBrain(difficulty=room.difficulty)
     history = list(room.guesses.filter(side=2).values_list('guess', 'hits'))
     guess = brain.guess_for(history)
     hits = count_hits(room.p1_secret, guess)
@@ -185,9 +193,14 @@ def start_pve(request):
         if not is_valid_number(secret):
             return error_response('秘密数字必须是 4 位数字（0000-9999）')
 
+    difficulty = str(request.data.get('difficulty') or '').strip().lower()
+    if difficulty not in DIFFICULTIES:
+        difficulty = DEFAULT_DIFFICULTY
+
     room = GameRoom.objects.create(
         mode=PVE,
         status=GameRoom.Status.SETUP,
+        difficulty=difficulty,
         player1=request.user,
         p2_secret=random_number(),
     )

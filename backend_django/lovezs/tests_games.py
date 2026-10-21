@@ -12,7 +12,13 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from .game_engine import ComputerBrain, count_hits, is_valid_number, random_number
+from .game_engine import (
+    DIFFICULTIES,
+    ComputerBrain,
+    count_hits,
+    is_valid_number,
+    random_number,
+)
 from .game_hints import HINTS_BY_HITS, get_opponent_hint
 from .models import GameGuess, GameRoom
 
@@ -51,15 +57,45 @@ class GameEngineTests(TestCase):
 
     def test_computer_converges_within_limit(self):
         secret = '9027'
-        brain = ComputerBrain()
-        for _ in range(15):
-            guess = brain.choose()
-            hits = count_hits(secret, guess)
-            if hits == 4:
-                break
-            brain.observe(guess, hits)
-        else:
-            self.fail('电脑在 15 次内没有猜中')
+        for difficulty in DIFFICULTIES:
+            brain = ComputerBrain(difficulty=difficulty)
+            for _ in range(25):
+                guess = brain.choose()
+                hits = count_hits(secret, guess)
+                if hits == 4:
+                    break
+                brain.observe(guess, hits)
+            else:
+                self.fail(f'{difficulty} 难度在 25 次内没有猜中')
+
+    def test_difficulty_controls_waste(self):
+        """困难难度不会走神，简单难度会明显更常乱猜。"""
+        from .game_engine import WASTE_CHANCE
+
+        self.assertEqual(WASTE_CHANCE['hard'], 0.0)
+        self.assertGreater(WASTE_CHANCE['easy'], WASTE_CHANCE['normal'])
+        self.assertGreater(WASTE_CHANCE['normal'], WASTE_CHANCE['hard'])
+
+    def test_unknown_difficulty_falls_back_to_normal(self):
+        brain = ComputerBrain(difficulty='nightmare')
+        self.assertEqual(brain.difficulty, 'normal')
+
+    def test_hits_table_matches_naive_count(self):
+        """快捷查表必须和逐位比较结果一致（含首位 0 的边界）。"""
+        import random as _random
+
+        rng = _random.Random(1)
+        for _ in range(200):
+            a = f'{rng.randint(0, 9999):04d}'
+            b = f'{rng.randint(0, 9999):04d}'
+            naive = sum(1 for x, y in zip(a, b) if x == y)
+            self.assertEqual(count_hits(a, b), naive)
+
+    def test_pack_unpack_roundtrip(self):
+        from .game_engine import pack, unpack
+
+        for value in ('0000', '0123', '9027', '9999'):
+            self.assertEqual(unpack(pack(value)), value)
 
     def test_observe_filters_candidates(self):
         brain = ComputerBrain()
@@ -117,6 +153,27 @@ class PveFlowTests(GameApiTestBase):
         room_data = self.payload(response)['room']
         self.assertEqual(room_data['status'], 'playing')
         self.assertEqual(room_data['my_secret'], '0000')
+
+    def test_difficulty_is_stored_and_returned(self):
+        self.auth(self.alice)
+        response = self.client.post(
+            '/api/games/pve/', {'secret': '1234', 'difficulty': 'hard'}, format='json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.payload(response)['room']['difficulty'], 'hard')
+        self.assertEqual(GameRoom.objects.get(player1=self.alice).difficulty, 'hard')
+
+    def test_default_difficulty_is_normal(self):
+        self.auth(self.alice)
+        response = self.client.post('/api/games/pve/', {'secret': '1234'}, format='json')
+        self.assertEqual(self.payload(response)['room']['difficulty'], 'normal')
+
+    def test_illegal_difficulty_falls_back_to_normal(self):
+        self.auth(self.alice)
+        response = self.client.post(
+            '/api/games/pve/', {'secret': '1234', 'difficulty': 'impossible'}, format='json'
+        )
+        self.assertEqual(self.payload(response)['room']['difficulty'], 'normal')
 
     def test_start_and_play_a_round(self):
         self.auth(self.alice)
